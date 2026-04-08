@@ -3,6 +3,7 @@ package reservation
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -33,20 +34,24 @@ func (s *ReservationService) Submit(openid string, req *SubmitReq) (*Reservation
 	endTime, err2 := time.ParseInLocation(layout, req.EndTime, time.Local)
 
 	if err1 != nil || err2 != nil {
+		log.Printf("[error][reservation/service/Submit]: 时间解析失败，应该在handler层就已经处理好: startTime error: %v, endTime error: %v", err1, err2)
 		return nil, fmt.Errorf("时间格式错误")
 	}
 
 	if !endTime.After(startTime) {
+		log.Printf("[error][reservation/service/Submit]: 结束时间必须晚于开始时间，应该在handler层就已经处理好")
 		return nil, fmt.Errorf("结束时间必须晚于开始时间")
 	}
 
 	// 检查时间段是否已被占用
 	occupied, err := s.repo.FindByTimeRange(startTime, endTime)
 	if err != nil {
+		log.Printf("[error][reservation/service/Submit]: 查询占用时段失败: %v", err)
 		return nil, fmt.Errorf("查询占用时段失败: %v", err)
 	}
 
 	if len(occupied) > 0 {
+		log.Printf("[info][reservation/service/Submit]: 该时间段已被预约，无法提交")
 		return nil, fmt.Errorf("该时间段已被预约")
 	}
 
@@ -66,6 +71,7 @@ func (s *ReservationService) Submit(openid string, req *SubmitReq) (*Reservation
 	}
 
 	if err := s.repo.Create(res); err != nil {
+		log.Printf("[error][reservation/service/Submit]: 创建预约失败: %v", err)
 		return nil, fmt.Errorf("创建预约失败: %v", err)
 	}
 
@@ -91,6 +97,7 @@ func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlot, error) {
 	// 查询当天的预约
 	reservations, err := s.repo.FindByTimeRange(startOfDay, endOfDay)
 	if err != nil {
+		log.Printf("[error][reservation/service/GetOccupiedSlots]: 查询占用时段失败: %v", err)
 		return nil, err
 	}
 
@@ -117,12 +124,15 @@ func (s *ReservationService) Cancel(id uint, openid string) error {
 	res, err := s.repo.FindByID(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			log.Printf("[info][service][Cancel]: 预约不存在")
 			return fmt.Errorf("预约不存在")
 		}
+		log.Printf("[error][service][Cancel]: 查询预约失败: %v", err)
 		return err
 	}
 
 	if res.OpenID != openid {
+		log.Printf("[error][service][Cancel]: 无权操作此预约")
 		return fmt.Errorf("无权操作此预约")
 	}
 
