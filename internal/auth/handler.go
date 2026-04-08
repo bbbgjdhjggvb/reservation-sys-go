@@ -39,13 +39,14 @@ func (h *UserAuthHandler) WeChatCallBack(c *gin.Context) {
 		errcode := c.Query("errcode")
 		errmsg := c.Query("errmsg")
 		if errcode != "" {
-			log.Printf("微信授权失败: errocde=%s, errmsg=%s", errcode, errmsg)
+			log.Printf("[info][auth/handler/WeChatCallBack]: 微信授权失败: errocde=%s, errmsg=%s", errcode, errmsg)
 		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"msg": "缺少 code 参数，从微信服务号进入预约界面",
 		})
 		return
 	}
+	log.Printf("[info][auth/handler/WeChatCallBack]: 收到微信回调请求，code: %s", code)
 
 	openid, err := h.svc.LoginByCode(code)
 	if err != nil {
@@ -68,5 +69,6 @@ func (h *UserAuthHandler) WeChatCallBack(c *gin.Context) {
 
 	// 重定向到预约网页界面
 	redirectURL := h.frontendURL + "?token=" + token
+	log.Printf("[info][auth/handler/WeChatCallBack]: 重定向到预约界面: %s", redirectURL)
 	c.Redirect(http.StatusFound, redirectURL)
 }

@@ -8,6 +8,7 @@ import (
 //go:generate mockgen -source=service.go -destination=mock_service.go -package=auth
 
 // OAuthClient OAuth认证客户端接口
+// 通过接口限制可以使用的方法，同时方便进行mock测试
 type OAuthClient interface {
 	GetUserAccessToken(code string) (*OAuthAccessTokenResult, error)
 	GetUserInfo(openid string) string
@@ -76,6 +77,7 @@ func (s *UserAuthService) SetStatus(openid string, active bool) error {
 func (s *UserAuthService) LoginByCode(code string) (string, error) {
 	result, err := s.oauth.GetUserAccessToken(code)
 	if err != nil {
+		log.Printf("[error][auth/service/LoginByCode]: failed to get access token: %v", err)
 		return "", err
 	}
 	log.Printf("[info][auth/service/LoginByCode]: got openID %s", result.OpenID)
