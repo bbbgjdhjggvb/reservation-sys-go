@@ -1,0 +1,31 @@
+# 预约服务配置 (v2 - Reservation Service) - 测试环境
+# 用途: 处理用户预约相关业务
+
+server:
+  port: ":8081" # 预约服务端口
+  mode: "debug" # 测试环境保持 debug 模式
+
+mysql:
+  host: "mysql" # Docker 服务名
+  port: 3306
+  user: "res_user"
+  password: "12345678" # 测试环境密码
+  dbname: "home_xy"
+  max_idle_conns: 10
+  max_open_conns: 50 # 测试环境适当降低连接数
+
+redis:
+  host: "redis" # Docker 服务名
+  port: 6379
+  password: "" # 测试环境不设置 Redis 密码
+  db: 0
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24 # JWT 过期时间 (小时)
+
+# 微信配置 (用于获取用户信息，可选)
+wechat:
+  app_id: ""
+  app_secret: ""
+  token: ""

@@ -1,0 +1,32 @@
+# 预约服务配置 (v2 - Reservation Service)
+# 用途: 处理用户预约相关业务
+
+server:
+  port: ":8081"        # 预约服务端口 (与微信服务区分)
+  mode: "debug"        # Gin 运行模式: debug, release, test
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "res_user"
+  password: "12345678"
+  dbname: "home_xy"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24       # JWT 过期时间 (小时)
+
+# 微信配置 (用于获取用户信息，可选)
+# 未来微服务架构中将通过 gRPC 调用 v1 服务
+wechat:
+  app_id: ""
+  app_secret: ""
+  token: ""

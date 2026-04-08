@@ -1,0 +1,103 @@
+# 生产环境 Docker Compose 配置
+# 使用方法: docker-compose -f docker-compose.prod.yaml up -d
+
+version: "3.8"
+
+services:
+  # ============ 基础设施 ============
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: reservation-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_prod}
+      MYSQL_DATABASE: home_xy
+      MYSQL_USER: res_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-prod_password_123}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservation-net
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: reservation-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservation-net
+
+  # ============ 应用服务 ============
+
+  # v1 - 微信服务
+  v1-service:
+    image: ${DOCKER_IMAGE:-reservation-sys:latest}
+    container_name: reservation-v1
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=configs/config_v1.yaml
+    command: ["/app/v1"]
+    networks:
+      - reservation-net
+
+  # v2 - 预约服务
+  v2-service:
+    image: ${DOCKER_IMAGE:-reservation-sys:latest}
+    container_name: reservation-v2
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=configs/config_v2.yaml
+    command: ["/app/v2"]
+    networks:
+      - reservation-net
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: reservation-nginx
+    restart: unless-stopped
+    depends_on:
+      - v1-service
+      - v2-service
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
+      - ./deploy/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
+    networks:
+      - reservation-net
+
+networks:
+  reservation-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

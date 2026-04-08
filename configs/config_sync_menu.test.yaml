@@ -1,0 +1,18 @@
+# 微信菜单同步工具配置 - 测试环境
+# 用途: 独立运行菜单同步工具，不需要启动完整服务
+
+wechat:
+  app_id: "wx84d6833105361902"
+  app_secret: "d37c9085aa2d446fcd60e8c4236fee3d"
+  token: "mytesttoken123"
+  menu_config_path: "configs/menu.json"
+
+redis:
+  host: "redis"          # Docker 服务名
+  port: 6379             # Docker 内部端口
+  password: ""
+  db: 0
+
+# 使用方法:
+# docker exec reservation-v1 /app/v1-tools sync-menu
+# 或在容器内: go run cmd/tools/sync_menu.go -config configs/config_sync_menu.test.yaml

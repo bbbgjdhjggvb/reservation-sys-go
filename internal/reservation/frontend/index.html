@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>场地预约系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tdesign-web-component@0.0.4/dist/tdesign.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <h1 class="text-xl font-semibold text-gray-800">场地预约系统</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <!-- Token Error Alert -->
+        <div id="tokenError" class="hidden mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p class="font-medium">未授权访问</p>
+            <p class="text-sm mt-1">请从微信服务号进入预约页面</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="border-b">
+                <nav class="flex -mb-px">
+                    <button id="tab-reserve" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600" onclick="switchTab('reserve')">
+                        预约申请
+                    </button>
+                    <button id="tab-my" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" onclick="switchTab('my')">
+                        我的预约
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Reserve Form Tab -->
+            <div id="panel-reserve" class="tab-panel p-4 sm:p-6">
+                <form id="reserveForm" class="space-y-6">
+                    <!-- Applicant Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            申请人姓名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="applicant_name" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入姓名">
+                    </div>
+
+                    <!-- Alumni Association -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            所属校友会 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="alumni_association" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入所属校友会">
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            手机号码 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="tel" name="phone" required pattern="[0-9]{11}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入11位手机号码" maxlength="11">
+                    </div>
+
+                    <!-- Reason -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            预约理由 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea name="reason" required maxlength="500" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="请输入预约理由（最多500字）"></textarea>
+                        <p class="text-xs text-gray-500 mt-1"><span id="reasonCount">0</span>/500</p>
+                    </div>
+
+                    <!-- Date Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            预约日期 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onchange="loadOccupiedSlots()">
+                    </div>
+
+                    <!-- Time Selection -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                开始时间 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="time" name="start_time" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                结束时间 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="time" name="end_time" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Occupied Slots Display -->
+                    <div id="occupiedSlots" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">当日已预约时段</label>
+                        <div id="slotsList" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                            <span id="submitText">提交预约</span>
+                            <svg id="submitSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- My Reservations Tab -->
+            <div id="panel-my" class="tab-panel hidden p-4 sm:p-6">
+                <div id="reservationList" class="space-y-4">
+                    <!-- Loading -->
+                    <div id="loadingState" class="text-center py-8 text-gray-500">
+                        <svg class="animate-spin mx-auto h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="mt-2">加载中...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="hidden text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <p class="mt-2 text-gray-500">暂无预约记录</p>
+                    </div>
+
+                    <!-- Reservation Items -->
+                    <div id="reservationItems"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="px-4 py-3 rounded-lg shadow-lg" id="toastContent"></div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

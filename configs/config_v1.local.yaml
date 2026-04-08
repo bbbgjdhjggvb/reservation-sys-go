@@ -1,0 +1,33 @@
+# 微信服务号配置 - 本地 Docker 开发环境
+# 使用方法: 复制为 config_v1.yaml 或修改 cmd/api/v1/main.go 中的路径
+
+server:
+  port: ":8080"
+  mode: "debug"
+
+wechat:
+  app_id: "wx84d6833105361902"
+  app_secret: "d37c9085aa2d446fcd60e8c4236fee3d"
+  token: "1yYfrKx0DNgyrglRsvMs9KQKHlp0ON3jhnjJUDI+mmg="
+  menu_config_path: "configs/menu.json"
+  # 注意：这里填 ngrok 的 URL，启动 ngrok 后需要更新
+  frontend_url: "http://www.mytestsite.cloud/reserve"
+
+mysql:
+  host: "mysql" # Docker 服务名
+  port: 3306
+  user: "res_user"
+  password: "12345678"
+  dbname: "home_xy"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  host: "redis" # Docker 服务名
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24

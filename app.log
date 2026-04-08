@@ -1,0 +1,35 @@
+2026/03/24 22:08:21 配置文件加载成功
+2026/03/24 22:08:21 [info]: MySQL 连接成功！
+2026/03/24 22:08:21 [info]: 自动迁移表格成功
+2026/03/24 22:08:21 [info]: Redis 连接成功！
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] POST   /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] PUT    /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] PATCH  /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] HEAD   /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] OPTIONS /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] DELETE /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] CONNECT /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] TRACE  /wx                       --> main.main.func1 (3 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :80
+time="2026-03-24T22:08:26+08:00" level=debug msg="validate signature, timestamp=1774361306, nonce=173761930"
+time="2026-03-24T22:08:26+08:00" level=debug msg="response msg =<nil>"
+[GIN] 2026/03/24 - 22:08:26 | 200 |     290.566µs |    175.24.211.4 | POST     "/wx?signature=b83ca47db5a620bdb486b7828b28ab9de29dde15&timestamp=1774361306&nonce=173761930&openid=o3zVu3DfhzFeOCIOOqwh_sENdtLM"
+time="2026-03-24T22:08:29+08:00" level=debug msg="validate signature, timestamp=1774361309, nonce=2087887904"
+2026/03/24 22:08:29 [debug][auth/service/FindOrCreate]: call wechat.GetUserInfo
+2026/03/24 22:08:29 [debug]: GetUserInfo called with openid: o3zVu3DfhzFeOCIOOqwh_sENdtLM
+2026/03/24 22:08:29 [info][pkg/wechat/client]: successfully got user nickname:  Error , errcode=0 , errmsg=
+time="2026-03-24T22:08:29+08:00" level=debug msg="request msg =<xml><ToUserName><![CDATA[gh_bb420307307e]]></ToUserName>\n<FromUserName><![CDATA[o3zVu3DfhzFeOCIOOqwh_sENdtLM]]></FromUserName>\n<CreateTime>1774361309</CreateTime>\n<MsgType><![CDATA[event]]></MsgType>\n<Event><![CDATA[subscribe]]></Event>\n<EventKey><![CDATA[]]></EventKey>\n</xml>"
+time="2026-03-24T22:08:29+08:00" level=debug msg="response msg =&{CommonToken:{XMLName:{Space: Local:} ToUserName:o3zVu3DfhzFeOCIOOqwh_sENdtLM FromUserName:gh_bb420307307e CreateTime:1774361309 MsgType:text} Content:欢迎关注场地预约系统！\n点击下方菜单即可开始预约。}"
+[GIN] 2026/03/24 - 22:08:29 | 200 |  352.105512ms |  115.159.145.49 | POST     "/wx?signature=e3955245763ddfc8c3e31c0155fa0af032cdb1f5&timestamp=1774361309&nonce=2087887904&openid=o3zVu3DfhzFeOCIOOqwh_sENdtLM"
+[GIN] 2026/03/24 - 22:33:45 | 404 |         892ns |  64.181.201.187 | HEAD     "/"
+[GIN] 2026/03/24 - 22:33:45 | 404 |         671ns |  64.181.201.187 | GET      "/"
+[GIN] 2026/03/24 - 22:33:55 | 404 |         591ns |   91.224.92.125 | GET      "/SDK/webLanguage"
