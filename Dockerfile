@@ -36,9 +36,6 @@ COPY --from=builder /v1 /app/v1
 COPY --from=builder /v2 /app/v2
 # COPY --from=builder /v3 /app/v3
 
-# 复制菜单同步工具
-COPY --from=builder /sync_menu /app/tools/sync_menu
-
 # 复制配置文件和静态资源
 COPY configs/ /app/configs/
 COPY internal/reservation/frontend/ /app/internal/reservation/frontend/
