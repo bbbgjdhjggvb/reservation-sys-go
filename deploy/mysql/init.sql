@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `reservations` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `order_no` VARCHAR(50) NOT NULL COMMENT '订单号',
-    `openid` VARCHAR(100) NOT NULL COMMENT '预约人标识',
+    `open_id` VARCHAR(100) NOT NULL COMMENT '预约人标识',
     `application_name` VARCHAR(50) NOT NULL COMMENT '预约人名称',
     `reason` VARCHAR(500) NOT NULL COMMENT '预约理由',
     `phone` VARCHAR(20) NOT NULL COMMENT '电话号码',

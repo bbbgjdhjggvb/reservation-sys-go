@@ -23,6 +23,28 @@ docker ps -a # 包括停止了对容器
 docker volume ls 
 ```
 
+# docker log
+```
+docker logs reservation-v2
+
+# 实时输出最新的日志，直到按下 Ctrl + C
+docker logs -f reservation-v2
+
+# 查看后 N 行
+docker logs --tail 100 reservation-v2
+
+# 自带时间戳
+docker logs -f -t tail 50 reservation-v2
+
+# 捕捉特定等级
+docker logs reservation-v2 | grep "error"
+```
+
+# 进入 docker 容器内部
+```
+docker exec -it reservation-v2 bash
+```
+
 # docker-compose
 什么是 docker-compose
 一个文件解决多个容器配置，编排，统一部署，管理多个容器
