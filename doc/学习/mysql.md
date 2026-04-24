@@ -7,7 +7,13 @@
 ```sql
 CREATE DATABASE home_xy DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
-- 切换数据库 `USE home_xy`
+- 查看所有数据库：`SHOW DATABASES;`
+- 切换数据库 `USE home_xy;`
+
+# 表格管理
+- 查看所有表格：`SHOW TABLES;`
+- 查看表结构：`DESCRIBE reservations;`
+- 修改表格字段名字：`ALTER TABLE reservations RENAME COLUMN openid TO open_id`
 
 # 账号管理
 - 创建账号
