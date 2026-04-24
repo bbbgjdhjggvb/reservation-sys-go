@@ -1,4 +1,13 @@
 // Package main 预约系统的入口程序
+// @title           预约系统 API
+// @version         2.0
+// @description     校友场地预约系统的后端API服务
+// @host            localhost:8080
+// @BasePath        /api/v2
+// @securityDefinitions.apikey BearerAuth
+// @in              header
+// @name            Authorization
+// @description     JWT Bearer令牌认证，格式: Bearer {token}
 package main
 
 import (
@@ -14,12 +23,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// getConfigPath 获取配置文件路径
+// 优先级: 命令行参数 --config > 环境变量 CONFIG_PATH > 默认值
+func getConfigPath() string {
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--config" && i+1 < len(os.Args) {
+			return os.Args[i+1]
+		}
+	}
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+		return configPath
+	}
+	return "configs/config_v2.yaml"
+}
+
 func main() {
 	// 加载 reservation 模块配置
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "configs/config_v2.yaml"
-	}
+	configPath := getConfigPath()
 	resconfig.Load(configPath)
 	cfg := resconfig.Get()
 

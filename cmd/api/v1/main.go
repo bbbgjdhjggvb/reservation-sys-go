@@ -20,12 +20,23 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 )
 
+// getConfigPath 获取配置文件路径
+// 优先级: 命令行参数 --config > 环境变量 CONFIG_PATH > 默认值
+func getConfigPath() string {
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--config" && i+1 < len(os.Args) {
+			return os.Args[i+1]
+		}
+	}
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+		return configPath
+	}
+	return "configs/config_v1.yaml"
+}
+
 func main() {
 	// 加载 auth 模块配置
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "configs/config_v1.yaml"
-	}
+	configPath := getConfigPath()
 	authconfig.Load(configPath)
 	cfg := authconfig.Get()
 
