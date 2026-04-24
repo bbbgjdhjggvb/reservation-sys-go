@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2563eb">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#CE1A20">
     <title>场地预约系统</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tdesign-web-component@0.0.4/dist/tdesign.min.css">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="./static/css/style.css">
 </head>
-
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-4xl mx-auto px-4 py-4">
+    <header class="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <h1 class="text-xl font-semibold text-gray-800">场地预约系统</h1>
         </div>
     </header>
@@ -26,169 +21,180 @@
         <!-- Token Error Alert -->
         <div id="tokenError" class="hidden mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             <p class="font-medium">未授权访问</p>
-            <p class="text-sm mt-1">请从微信服务号进入预约页面</p>
+            <p class="text-sm mt-1">请从微信服务号进入预约页面，或携带 token 参数访问</p>
         </div>
 
-        <!-- Tabs -->
+        <!-- Reserve Panel -->
         <div class="bg-white rounded-lg shadow">
-            <div class="border-b">
-                <nav class="flex -mb-px">
-                    <button id="tab-reserve"
-                        class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600"
-                        onclick="switchTab('reserve')">
-                        预约申请
+
+            <!-- Step 1: Calendar & Time Slot Selection -->
+            <div id="step-calendar" class="p-4 sm:p-6">
+                <!-- Week Navigation -->
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="changeWeek(-1)" id="prevWeekBtn"
+                        class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     </button>
-                    <button id="tab-my"
-                        class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-                        onclick="switchTab('my')">
-                        我的预约
+                    <span id="weekLabel" class="text-sm font-medium text-gray-700"></span>
+                    <button onclick="changeWeek(1)" id="nextWeekBtn"
+                        class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </button>
-                </nav>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <div id="calendarGrid" class="calendar-grid min-w-[560px]"></div>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex items-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-50 border border-red-200 inline-block"></span> 可选</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded inline-block" style="background:#CE1A20"></span> 已选</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-yellow-100 border border-yellow-400 inline-block"></span> 待审核</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-200 border border-red-300 inline-block"></span> 已占用</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 border border-gray-200 inline-block"></span> 不可选</span>
+                </div>
+
+                <!-- Selected Info -->
+                <div id="selectedInfo" class="hidden mt-4 p-3 rounded-lg" style="background:var(--primary-light);border:1px solid var(--primary-border)">
+                    <p class="text-sm font-medium" style="color:var(--primary-color)">已选择时段：</p>
+                    <p id="selectedText" class="text-sm mt-1" style="color:var(--primary-hover)"></p>
+                </div>
+
+                <!-- Next Button -->
+                <div class="mt-6">
+                    <button onclick="goToForm()" id="nextStepBtn"
+                        class="w-full text-white font-medium py-3 px-4 rounded-lg transition duration-200 opacity-70 cursor-not-allowed"
+                        style="background:var(--primary-color)" onmouseover="if(!this.classList.contains('btn-disabled'))this.style.background='var(--primary-hover)'" onmouseout="this.style.background='var(--primary-color)'">
+                        下一步：填写信息
+                    </button>
+                </div>
             </div>
 
-            <!-- Reserve Form Tab -->
-            <div id="panel-reserve" class="tab-panel p-4 sm:p-6">
-                <form id="reserveForm" class="space-y-6">
+            <!-- Step 2: Form -->
+            <div id="step-form" class="hidden p-4 sm:p-6">
+                <!-- Selected Time Summary -->
+                <div class="mb-6 p-3 rounded-lg" style="background:var(--primary-light);border:1px solid var(--primary-border)">
+                    <p class="text-sm font-medium" style="color:var(--primary-color)">预约时段</p>
+                    <p id="formTimeDisplay" class="text-sm mt-1" style="color:var(--primary-hover)"></p>
+                </div>
+
+                <form id="reserveForm" class="space-y-5">
                     <!-- Applicant Name -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            申请人姓名 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="applicant_name" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">申请人姓名 <span class="text-red-500">*</span></label>
+                        <input type="text" name="applicant_name" id="f_name" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2"
                             placeholder="请输入姓名">
                     </div>
+
+                    <!-- Year -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            申请人数 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="applicant_name" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="请输人数">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">年级（入学年份）<span class="text-red-500">*</span></label>
+                        <input type="text" name="year" id="f_year" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2"
+                            placeholder="例如：2020" maxlength="4" pattern="\d{4}" inputmode="numeric">
                     </div>
 
-                    <!-- Alumni Association -->
+                    <!-- Alumni Association (Autocomplete) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            所属校友会 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="alumni_association" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="请输入所属校友会">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">所属学院校友会 <span class="text-red-500">*</span></label>
+                        <div class="autocomplete-wrapper" id="alumniWrapper">
+                            <input type="text" name="alumni_association" id="f_alumni" required
+                                class="autocomplete-input w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                placeholder="输入关键词搜索，如'计算机''经管'" autocomplete="off">
+                            <div class="autocomplete-dropdown" id="alumniDropdown"></div>
+                        </div>
+                        <input type="hidden" name="alumni_association_value" id="f_alumni_value">
+                        <p class="text-xs text-gray-400 mt-1">请从下拉选项中选择</p>
+                    </div>
+
+                    <!-- Major -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">专业 <span class="text-red-500">*</span></label>
+                        <input type="text" name="major" id="f_major" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2"
+                            placeholder="请输入专业">
                     </div>
 
                     <!-- Phone -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            手机号码 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="tel" name="phone" required pattern="[0-9]{11}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">手机号码 <span class="text-red-500">*</span></label>
+                        <input type="tel" name="phone" id="f_phone" required pattern="[0-9]{11}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2"
                             placeholder="请输入11位手机号码" maxlength="11">
                     </div>
 
                     <!-- Reason -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            预约理由 <span class="text-red-500">*</span>
-                        </label>
-                        <textarea name="reason" required maxlength="500" rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            placeholder="请输入预约理由（最多500字）"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">会议内容 <span class="text-red-500">*</span></label>
+                        <textarea name="reason" id="f_reason" required maxlength="500" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 resize-none"
+                            placeholder="请输入会议内容（最多500字）"></textarea>
                         <p class="text-xs text-gray-500 mt-1"><span id="reasonCount">0</span>/500</p>
                     </div>
 
-                    <!-- Date Selection -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            预约日期 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" name="date" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            onchange="loadOccupiedSlots()">
-                    </div>
-
-                    <!-- Time Selection -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                开始时间 <span class="text-red-500">*</span>
-                            </label>
-                            <input type="time" name="start_time" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                结束时间 <span class="text-red-500">*</span>
-                            </label>
-                            <input type="time" name="end_time" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </div>
-                    </div>
-
-                    <!-- Occupied Slots Display -->
-                    <div id="occupiedSlots" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">当日已预约时段</label>
-                        <div id="slotsList" class="flex flex-wrap gap-2"></div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="pt-4">
+                    <!-- Buttons -->
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="goToCalendar()"
+                            class="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg transition duration-200">
+                            返回选择时间
+                        </button>
                         <button type="submit" id="submitBtn"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
-                            <span id="submitText">提交预约</span>
-                            <svg id="submitSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                    stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                </path>
+                            class="flex-1 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center disabled:opacity-50"
+                            style="background:var(--primary-color)"
+                            onmouseover="if(!this.disabled)this.style.background='var(--primary-hover)'"
+                            onmouseout="this.style.background='var(--primary-color)'">
+                            <span id="submitText">确定提交</span>
+                            <svg id="submitSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </button>
                     </div>
                 </form>
             </div>
-
-            <!-- My Reservations Tab -->
-            <div id="panel-my" class="tab-panel hidden p-4 sm:p-6">
-                <div id="reservationList" class="space-y-4">
-                    <!-- Loading -->
-                    <div id="loadingState" class="text-center py-8 text-gray-500">
-                        <svg class="animate-spin mx-auto h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg"
-                            fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        <p class="mt-2">加载中...</p>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="emptyState" class="hidden text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <p class="mt-2 text-gray-500">暂无预约记录</p>
-                    </div>
-
-                    <!-- Reservation Items -->
-                    <div id="reservationItems"></div>
-                </div>
-            </div>
         </div>
     </main>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeConfirmModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl mx-4 max-w-md w-full p-6 animate-modal-in">
+            <div class="text-center mb-5">
+                <div class="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background:var(--primary-light)">
+                    <svg class="w-6 h-6" style="color:var(--primary-color)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">确认提交预约？</h3>
+                <p class="text-sm text-gray-500 mt-2">请仔细核对以下信息，提交后需等待审核</p>
+            </div>
+            <div id="confirmDetails" class="bg-gray-50 rounded-lg p-4 text-sm space-y-2 mb-5"></div>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()"
+                    class="flex-1 py-2.5 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">返回修改</button>
+                <button onclick="doSubmit()" id="confirmSubmitBtn"
+                    class="flex-1 py-2.5 px-4 text-white rounded-lg font-medium transition flex items-center justify-center"
+                    style="background:var(--primary-color)"
+                    onmouseover="this.style.background='var(--primary-hover)'"
+                    onmouseout="this.style.background='var(--primary-color)'">
+                    <span id="confirmSubmitText">确认提交</span>
+                    <svg id="confirmSubmitSpinner" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Container -->
     <div id="toast" class="fixed top-4 right-4 z-50 hidden">
         <div class="px-4 py-3 rounded-lg shadow-lg" id="toastContent"></div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="./static/js/app.js"></script>
 </body>
-
 </html>
