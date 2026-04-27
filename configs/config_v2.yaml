@@ -4,6 +4,10 @@
 server:
   port: ":8081"        # 预约服务端口 (与微信服务区分)
   mode: "debug"        # Gin 运行模式: debug, release, test
+  # release 模式下请将下方改为实际的前端域名白名单
+  cors_allow_origins:
+    - "https://your-frontend-domain.com"
+    - "http://localhost:8083"   # 本地 Swagger 调试
 
 mysql:
   host: "127.0.0.1"
