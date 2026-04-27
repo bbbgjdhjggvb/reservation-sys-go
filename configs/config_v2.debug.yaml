@@ -1,0 +1,33 @@
+# 预约服务配置 - 本地直连调试环境
+# 用于: 本地 go run 启动，直连 Docker 中的 MySQL/Redis
+# 使用方法: CONFIG_PATH=configs/config_v2.debug.yaml go run cmd/api/v2/main.go
+
+server:
+  port: ":8081"
+  mode: "debug"
+  cors_allow_origins:            # 开发环境：宽松策略，允许所有来源
+    - "*"
+
+mysql:
+  host: "localhost"         # 本地直连 Docker 映射端口
+  port: 3307
+  user: "res_user"
+  password: "12345678"
+  dbname: "home_xy"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  host: "localhost"         # 本地直连 Docker 映射端口
+  port: 6380
+  password: ""
+  db: 0
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24
+
+wechat:
+  app_id: ""
+  app_secret: ""
+  token: ""
