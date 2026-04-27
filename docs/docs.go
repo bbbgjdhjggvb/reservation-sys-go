@@ -15,14 +15,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v2/reservation/my": {
+        "/reservation/my": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取当前登录用户的所有预约记录，需要JWT认证",
+                "description": "获取当前登录用户的所有预约订单（包含各时段明细），需要JWT认证",
                 "produces": [
                     "application/json"
                 ],
@@ -54,7 +54,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/internal_reservation.ReservationResp"
+                                                "$ref": "#/definitions/internal_reservation.OrderResp"
                                             }
                                         }
                                     }
@@ -77,7 +77,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/occupied": {
+        "/reservation/occupied": {
             "get": {
                 "security": [
                     {
@@ -140,14 +140,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/submit": {
+        "/reservation/submit": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "用户提交场地预约申请，需要JWT认证",
+                "description": "用户提交场地预约申请，支持一次提交1~4个时间段，需要JWT认证",
                 "consumes": [
                     "application/json"
                 ],
@@ -157,7 +157,7 @@ const docTemplate = `{
                 "tags": [
                     "预约管理"
                 ],
-                "summary": "提交预约申请",
+                "summary": "提交预约申请（支持多时段）",
                 "parameters": [
                     {
                         "type": "string",
@@ -168,7 +168,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "预约提交请求",
+                        "description": "预约提交请求（含多个时间段）",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -189,7 +189,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_reservation.ReservationResp"
+                                            "$ref": "#/definitions/internal_reservation.OrderResp"
                                         }
                                     }
                                 }
@@ -211,14 +211,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/{id}": {
+        "/reservation/{id}": {
             "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "取消指定的预约申请，仅预约人本人可操作，需要JWT认证",
+                "description": "取消指定的预约订单（取消所有关联的时段），仅预约人本人可操作，需要JWT认证",
                 "produces": [
                     "application/json"
                 ],
@@ -238,7 +238,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "预约ID",
+                        "description": "订单ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -268,58 +268,63 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_reservation.ReservationResp": {
+        "internal_reservation.OrderResp": {
             "type": "object",
             "properties": {
+                "alumni_association": {
+                    "type": "string",
+                    "example": "土木与交通工程学院校友会"
+                },
                 "applicant_name": {
-                    "description": "申请人姓名",
                     "type": "string",
                     "example": "张三"
                 },
                 "created_at": {
-                    "description": "创建时间",
                     "type": "string",
                     "example": "2026-01-01 08:30"
                 },
-                "end_time": {
-                    "description": "预约结束时间",
-                    "type": "string",
-                    "example": "2026-01-01 11:00"
-                },
                 "id": {
-                    "description": "预约ID",
                     "type": "integer",
                     "example": 1
                 },
+                "major": {
+                    "type": "string",
+                    "example": "建筑系"
+                },
                 "order_no": {
-                    "description": "订单号",
                     "type": "string",
                     "example": "R202601010900001234"
                 },
                 "phone": {
-                    "description": "联系电话",
                     "type": "string",
                     "example": "13800138000"
                 },
                 "reason": {
-                    "description": "预约理由",
                     "type": "string",
-                    "example": "参观校史馆"
+                    "example": "智慧城市讲座"
                 },
-                "start_time": {
-                    "description": "预约开始时间",
-                    "type": "string",
-                    "example": "2026-01-01 09:00"
+                "slots": {
+                    "description": "时段明细列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_reservation.SlotResp"
+                    }
                 },
                 "status": {
-                    "description": "预约状态: 0待审核 1已通过 2已拒绝 3已完成 4已取消",
                     "type": "integer",
                     "example": 0
                 },
                 "status_text": {
-                    "description": "状态文本",
                     "type": "string",
                     "example": "待审核"
+                },
+                "total_slots": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2000
                 }
             }
         },
@@ -337,59 +342,95 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_reservation.SlotResp": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string",
+                    "example": "2026-01-01 10:00"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "2026-01-01 08:00"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "status_text": {
+                    "type": "string",
+                    "example": "待审核"
+                }
+            }
+        },
         "internal_reservation.SubmitReq": {
             "type": "object",
             "required": [
                 "alumni_association",
                 "applicant_name",
-                "end_time",
                 "major",
                 "phone",
                 "reason",
-                "start_time",
+                "slots",
                 "year"
             ],
             "properties": {
                 "alumni_association": {
-                    "description": "校友会名称",
                     "type": "string",
-                    "example": "北京大学校友会"
+                    "example": "土木与交通工程学院校友会"
                 },
                 "applicant_name": {
-                    "description": "申请人姓名",
                     "type": "string",
                     "example": "张三"
                 },
-                "end_time": {
-                    "description": "预约结束时间",
-                    "type": "string",
-                    "example": "2026-01-01 11:00:00"
-                },
                 "major": {
-                    "description": "专业",
                     "type": "string",
-                    "example": "计算机科学"
+                    "example": "建筑系"
                 },
                 "phone": {
-                    "description": "联系电话",
                     "type": "string",
                     "example": "13800138000"
                 },
                 "reason": {
-                    "description": "预约理由",
                     "type": "string",
                     "maxLength": 500,
-                    "example": "参观校史馆"
+                    "example": "智慧城市讲座"
                 },
-                "start_time": {
-                    "description": "预约开始时间",
-                    "type": "string",
-                    "example": "2026-01-01 09:00:00"
+                "slots": {
+                    "description": "预约时间段列表（1~4个）",
+                    "type": "array",
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/internal_reservation.TimeSlotReq"
+                    }
                 },
                 "year": {
-                    "description": "入学年份",
                     "type": "integer",
-                    "example": 2020
+                    "example": 2000
+                }
+            }
+        },
+        "internal_reservation.TimeSlotReq": {
+            "type": "object",
+            "required": [
+                "end_time",
+                "start_time"
+            ],
+            "properties": {
+                "end_time": {
+                    "description": "结束时间",
+                    "type": "string",
+                    "example": "2026-01-01 10:00:00"
+                },
+                "start_time": {
+                    "description": "开始时间",
+                    "type": "string",
+                    "example": "2026-01-01 08:00:00"
                 }
             }
         },
@@ -397,17 +438,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_time": {
-                    "description": "结束时间",
                     "type": "string",
                     "example": "2026-01-01 11:00"
                 },
                 "start_time": {
-                    "description": "开始时间",
                     "type": "string",
                     "example": "2026-01-01 09:00"
                 },
                 "status": {
-                    "description": "状态: pending待审核 / approved已通过",
+                    "description": "pending待审核 / approved已通过",
                     "type": "string",
                     "example": "pending"
                 }
@@ -416,7 +455,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "JWT Bearer令牌认证，格式: Bearer {token}",
+            "description": "JWT Bearer令牌认证，格式: Bearer token",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -427,7 +466,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:8081",
 	BasePath:         "/api/v2",
 	Schemes:          []string{},
 	Title:            "预约系统 API",

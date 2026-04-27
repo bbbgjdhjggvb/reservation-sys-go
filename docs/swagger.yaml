@@ -1,47 +1,48 @@
 basePath: /api/v2
 definitions:
-  internal_reservation.ReservationResp:
+  internal_reservation.OrderResp:
     properties:
+      alumni_association:
+        example: 土木与交通工程学院校友会
+        type: string
       applicant_name:
-        description: 申请人姓名
         example: 张三
         type: string
       created_at:
-        description: 创建时间
         example: 2026-01-01 08:30
         type: string
-      end_time:
-        description: 预约结束时间
-        example: 2026-01-01 11:00
-        type: string
       id:
-        description: 预约ID
         example: 1
         type: integer
+      major:
+        example: 建筑系
+        type: string
       order_no:
-        description: 订单号
         example: R202601010900001234
         type: string
       phone:
-        description: 联系电话
         example: "13800138000"
         type: string
       reason:
-        description: 预约理由
-        example: 参观校史馆
+        example: 智慧城市讲座
         type: string
-      start_time:
-        description: 预约开始时间
-        example: 2026-01-01 09:00
-        type: string
+      slots:
+        description: 时段明细列表
+        items:
+          $ref: '#/definitions/internal_reservation.SlotResp'
+        type: array
       status:
-        description: '预约状态: 0待审核 1已通过 2已拒绝 3已完成 4已取消'
         example: 0
         type: integer
       status_text:
-        description: 状态文本
         example: 待审核
         type: string
+      total_slots:
+        example: 2
+        type: integer
+      year:
+        example: 2000
+        type: integer
     type: object
   internal_reservation.Response:
     properties:
@@ -53,76 +54,98 @@ definitions:
         example: success
         type: string
     type: object
+  internal_reservation.SlotResp:
+    properties:
+      end_time:
+        example: 2026-01-01 10:00
+        type: string
+      id:
+        example: 1
+        type: integer
+      start_time:
+        example: 2026-01-01 08:00
+        type: string
+      status:
+        example: 0
+        type: integer
+      status_text:
+        example: 待审核
+        type: string
+    type: object
   internal_reservation.SubmitReq:
     properties:
       alumni_association:
-        description: 校友会名称
-        example: 北京大学校友会
+        example: 土木与交通工程学院校友会
         type: string
       applicant_name:
-        description: 申请人姓名
         example: 张三
         type: string
-      end_time:
-        description: 预约结束时间
-        example: "2026-01-01 11:00:00"
-        type: string
       major:
-        description: 专业
-        example: 计算机科学
+        example: 建筑系
         type: string
       phone:
-        description: 联系电话
         example: "13800138000"
         type: string
       reason:
-        description: 预约理由
-        example: 参观校史馆
+        example: 智慧城市讲座
         maxLength: 500
         type: string
-      start_time:
-        description: 预约开始时间
-        example: "2026-01-01 09:00:00"
-        type: string
+      slots:
+        description: 预约时间段列表（1~4个）
+        items:
+          $ref: '#/definitions/internal_reservation.TimeSlotReq'
+        maxItems: 4
+        minItems: 1
+        type: array
       year:
-        description: 入学年份
-        example: 2020
+        example: 2000
         type: integer
     required:
     - alumni_association
     - applicant_name
-    - end_time
     - major
     - phone
     - reason
-    - start_time
+    - slots
     - year
+    type: object
+  internal_reservation.TimeSlotReq:
+    properties:
+      end_time:
+        description: 结束时间
+        example: "2026-01-01 10:00:00"
+        type: string
+      start_time:
+        description: 开始时间
+        example: "2026-01-01 08:00:00"
+        type: string
+    required:
+    - end_time
+    - start_time
     type: object
   internal_reservation.TimeSlotResp:
     properties:
       end_time:
-        description: 结束时间
         example: 2026-01-01 11:00
         type: string
       start_time:
-        description: 开始时间
         example: 2026-01-01 09:00
         type: string
       status:
-        description: '状态: pending待审核 / approved已通过'
+        description: pending待审核 / approved已通过
         example: pending
         type: string
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact: {}
   description: 校友场地预约系统的后端API服务
   title: 预约系统 API
   version: "2.0"
 paths:
-  /api/v2/reservation/{id}:
+  /reservation/{id}:
     delete:
-      description: 取消指定的预约申请，仅预约人本人可操作，需要JWT认证
+      description: 取消指定的预约订单（取消所有关联的时段），仅预约人本人可操作，需要JWT认证
       parameters:
       - default: Bearer
         description: Bearer JWT令牌
@@ -130,7 +153,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: 预约ID
+      - description: 订单ID
         example: 1
         in: path
         name: id
@@ -156,9 +179,9 @@ paths:
       summary: 取消预约
       tags:
       - 预约管理
-  /api/v2/reservation/my:
+  /reservation/my:
     get:
-      description: 获取当前登录用户的所有预约记录，需要JWT认证
+      description: 获取当前登录用户的所有预约订单（包含各时段明细），需要JWT认证
       parameters:
       - default: Bearer
         description: Bearer JWT令牌
@@ -177,7 +200,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/internal_reservation.ReservationResp'
+                    $ref: '#/definitions/internal_reservation.OrderResp'
                   type: array
               type: object
         "401":
@@ -193,7 +216,7 @@ paths:
       summary: 获取我的预约列表
       tags:
       - 预约管理
-  /api/v2/reservation/occupied:
+  /reservation/occupied:
     get:
       description: 查询指定日期已被预约占用的时间段，需要JWT认证
       parameters:
@@ -231,11 +254,11 @@ paths:
       summary: 获取已占用时间段
       tags:
       - 预约管理
-  /api/v2/reservation/submit:
+  /reservation/submit:
     post:
       consumes:
       - application/json
-      description: 用户提交场地预约申请，需要JWT认证
+      description: 用户提交场地预约申请，支持一次提交1~4个时间段，需要JWT认证
       parameters:
       - default: Bearer
         description: Bearer JWT令牌
@@ -243,7 +266,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: 预约提交请求
+      - description: 预约提交请求（含多个时间段）
         in: body
         name: body
         required: true
@@ -259,7 +282,7 @@ paths:
             - $ref: '#/definitions/internal_reservation.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_reservation.ReservationResp'
+                  $ref: '#/definitions/internal_reservation.OrderResp'
               type: object
         "400":
           description: 请求参数错误
@@ -271,12 +294,12 @@ paths:
             $ref: '#/definitions/internal_reservation.Response'
       security:
       - BearerAuth: []
-      summary: 提交预约申请
+      summary: 提交预约申请（支持多时段）
       tags:
       - 预约管理
 securityDefinitions:
   BearerAuth:
-    description: 'JWT Bearer令牌认证，格式: Bearer {token}'
+    description: 'JWT Bearer令牌认证，格式: Bearer token'
     in: header
     name: Authorization
     type: apiKey
