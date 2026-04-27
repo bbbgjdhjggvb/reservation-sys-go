@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"reservation-sys/internal/platform"
+
 	"github.com/silenceper/wechat/v2/officialaccount"
 	"gorm.io/gorm"
 )
@@ -11,6 +13,9 @@ var (
 )
 
 func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, frontendURL string) {
+	// 自动迁移表结构
+	platform.AutoMigrate(db, &User{})
+
 	repo := NewUserRepository(db)
 	oauth := NewWechatOAuthClient(oa)
 	provider := NewWechatUserInfoProvider(oa)

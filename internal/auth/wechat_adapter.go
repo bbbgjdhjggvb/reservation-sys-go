@@ -24,11 +24,7 @@ func (c *wechatOAuthClient) GetUserAccessToken(code string) (*OAuthAccessTokenRe
 }
 
 func (c *wechatOAuthClient) GetUserInfo(openid string) string {
-	user, err := c.oa.GetUser().GetUserInfo(openid)
-	if err != nil {
-		return ""
-	}
-	return user.Nickname
+	return fetchWechatNickname(c.oa, openid)
 }
 
 // wechatUserInfoProvider 微信用户信息提供者
@@ -42,7 +38,12 @@ func NewWechatUserInfoProvider(oa *officialaccount.OfficialAccount) UserInfoProv
 }
 
 func (p *wechatUserInfoProvider) GetUserInfo(openid string) string {
-	user, err := p.oa.GetUser().GetUserInfo(openid)
+	return fetchWechatNickname(p.oa, openid)
+}
+
+// fetchWechatNickname 从微信API获取用户昵称（公共逻辑，避免重复）
+func fetchWechatNickname(oa *officialaccount.OfficialAccount, openid string) string {
+	user, err := oa.GetUser().GetUserInfo(openid)
 	if err != nil {
 		return ""
 	}
