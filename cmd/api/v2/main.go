@@ -2,12 +2,12 @@
 // @title           预约系统 API
 // @version         2.0
 // @description     校友场地预约系统的后端API服务
-// @host            localhost:8080
-// @BasePath        /api/v2
+// @host            localhost:8081
+// @BasePath		/api/v2
 // @securityDefinitions.apikey BearerAuth
 // @in              header
 // @name            Authorization
-// @description     JWT Bearer令牌认证，格式: Bearer {token}
+// @description     JWT Bearer令牌认证，格式: Bearer token
 package main
 
 import (
@@ -61,6 +61,9 @@ func main() {
 
 	// 初始化路由
 	r := gin.Default()
+
+	// CORS 中间件（根据运行模式自动切换策略）
+	r.Use(auth.CORSMiddleware(cfg.Server.CORSAllowOrigins))
 
 	// 静态资源和模板
 	r.Static("/static", "./internal/reservation/frontend/static")
