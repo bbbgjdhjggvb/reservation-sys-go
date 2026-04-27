@@ -14,6 +14,7 @@ CREATE DATABASE home_xy DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 - 查看所有表格：`SHOW TABLES;`
 - 查看表结构：`DESCRIBE reservations;`
 - 修改表格字段名字：`ALTER TABLE reservations RENAME COLUMN openid TO open_id`
+- 删除表格： `DROP TABLE reservations;`
 
 # 账号管理
 - 创建账号

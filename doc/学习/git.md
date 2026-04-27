@@ -1,4 +1,5 @@
 # 远程仓库管理
+
 ```
 #  添加远程仓库
 git remote add <name> <url>
@@ -17,6 +18,7 @@ git remote remove server
 ```
 
 # 代码推送
+
 ```
 # 推送分支到远程仓库
 git push <name> <branch>
@@ -27,6 +29,7 @@ git push -u server main
 ```
 
 # 拉取代码
+
 ```
 # 拉取server仓库的主分支
 git pull server master
@@ -39,6 +42,7 @@ git checkout -b feature server/feature
 ```
 
 # 分支操作
+
 ```
 # 查看本地分支
 git branch
@@ -63,6 +67,7 @@ git push server --delete feature
 ```
 
 # 工作流程
+
 ```
 # 本地
 git add .
