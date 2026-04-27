@@ -11,8 +11,9 @@ import (
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port string `yaml:"port"`
-	Mode string `yaml:"mode"`
+	Port             string   `yaml:"port"`
+	Mode             string   `yaml:"mode"`
+	CORSAllowOrigins []string `yaml:"cors_allow_origins"`
 }
 
 // MySQLConfig MySQL 数据库配置

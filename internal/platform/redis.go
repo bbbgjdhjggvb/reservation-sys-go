@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"reservation-sys/internal/config" // 注意替换为你的真实模块名
+	"reservation-sys/internal/config"
 
 	"github.com/go-redis/redis/v8"
 )

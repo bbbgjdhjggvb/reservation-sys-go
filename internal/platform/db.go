@@ -3,13 +3,13 @@ package platform
 import (
 	"fmt"
 	"log"
-	"reservation-sys/internal/auth"
 	"reservation-sys/internal/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
+// InitDB 初始化数据库连接
 func InitDB(cfg *config.MySQLConfig) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
@@ -35,21 +35,14 @@ func InitDB(cfg *config.MySQLConfig) *gorm.DB {
 	}
 
 	log.Println("[info]: MySQL 连接成功！")
-
-	/* 数据库中表格迁移
-	 * 1. 在初始开发阶段使用gorm的表格自动迁移
-	 * 2. 在上线的时候使用sql创建表格
-	 */
-	autoMigrate(db)
 	return db
 }
 
-func autoMigrate(db *gorm.DB) {
-	err := db.AutoMigrate(
-		&auth.User{})
-	if err != nil {
+// AutoMigrate 自动迁移表结构
+// 由各模块在 InitModule 时调用，保持 platform 层不依赖业务模型
+func AutoMigrate(db *gorm.DB, models ...any) {
+	if err := db.AutoMigrate(models...); err != nil {
 		log.Fatalf("[error]: 自动迁移表格失败: %v", err)
-	} else {
-		log.Println("[info]: 自动迁移表格成功")
 	}
+	log.Println("[info]: 自动迁移表格成功")
 }
