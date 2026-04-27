@@ -9,7 +9,6 @@ let currentWeekStart = null;
 let selectedSlots = [];
 const MAX_SLOTS = 4;
 let occupiedSlots = {};
-let pendingFormDataList = [];
 
 // Time slots definition
 const TIME_SLOTS = [
@@ -225,22 +224,28 @@ function handleFormSubmit(e){
         closeAlumniDropdown(); return;
     }
 
-    pendingFormDataList=selectedSlots.map(slot=>({
+    // 构建单次批量提交的请求体
+    pendingFormData={
         applicant_name:name, year:parseInt(year), alumni_association:alumniValue,
         major:major, phone:phone, reason:reason,
-        start_time:`${slot.date} ${slot.startTime}:00`,end_time:`${slot.date} ${slot.endTime}:00`
-    }));
+        slots:selectedSlots.map(s=>({
+            start_time:`${s.date} ${s.startTime}:00`,
+            end_time:`${s.date} ${s.endTime}:00`
+        }))
+    };
     showConfirmModal();
 }
 
 // ========== Confirm Modal ==========
+let pendingFormData = null;  // 单次请求体（含slots数组）
+
 function showConfirmModal(){
-    const details=document.getElementById('confirmDetails'), first=pendingFormDataList[0],dn=['日','一','二','三','四','五','六'];
-    let sl=pendingFormDataList.map((fd,i)=>{
-        const d=new Date(fd.start_time),ts=`${d.getMonth()+1}月${d.getDate()}日 周${dn[d.getDay()]} ${fd.start_time.split(' ')[1]}-${fd.end_time.split(' ')[1]}`;
+    const details=document.getElementById('confirmDetails'), first=pendingFormData, dn=['日','一','二','三','四','五','六'];
+    let sl=first.slots.map((slot,i)=>{
+        const d=new Date(slot.start_time),ts=`${d.getMonth()+1}月${d.getDate()}日 周${dn[d.getDay()]} ${slot.start_time.split(' ')[1]}-${slot.end_time.split(' ')[1]}`;
         return`<div class="flex justify-between"><span style="color:var(--gray-500)">时段${i+1}</span><span class="font-medium text-gray-800">${ts}</span></div>`;
     }).join('');
-    details.innerHTML=`<div class="font-medium mb-2 pb-2 border-b" style="color:var(--primary-color)">共 ${pendingFormDataList.length} 个时段</div>${sl}<div class="mt-3 pt-2 border-t space-y-2">
+    details.innerHTML=`<div class="font-medium mb-2 pb-2 border-b" style="color:var(--primary-color)">共 ${first.slots.length} 个时段</div>${sl}<div class="mt-3 pt-2 border-t space-y-2">
         <div class="flex justify-between"><span class="text-gray-500">申请人</span><span class="font-medium text-gray-800">${first.applicant_name}</span></div>
         <div class="flex justify-between"><span class="text-gray-500">入学年份</span><span class="font-medium text-gray-800">${first.year}</span></div>
         <div class="flex justify-between"><span class="text-gray-500">校友会</span><span class="font-medium text-gray-800">${first.alumni_association}</span></div>
@@ -255,20 +260,23 @@ function closeConfirmModal(){document.getElementById('confirmModal').classList.a
 async function doSubmit(){
     const btn=document.getElementById('confirmSubmitBtn'),tx=document.getElementById('confirmSubmitText'),sp=document.getElementById('confirmSubmitSpinner');
     btn.disabled=true; tx.textContent='提交中...'; sp.classList.remove('hidden');
-    let ok=0,fail=0;
     try{
-        for(let i=0;i<pendingFormDataList.length;i++){
-            const d=await apiRequest('/reservation/submit',{method:'POST',body:JSON.stringify(pendingFormDataList[i])});
-            if(d.code===200){ok++; delete occupiedSlots[pendingFormDataList[i].start_time.split(' ')[0]]}else fail++;
+        const data=await apiRequest('/reservation/submit',{method:'POST',body:JSON.stringify(pendingFormData)});
+        if(data.code===200){
+            closeConfirmModal();
+            showToast(`预约提交成功，共${pendingFormData.slots.length}个时段，请等待审核`,'success');
+            // 清除已选时段的缓存
+            pendingFormData.slots.forEach(s=>{
+                const dateKey=s.start_time.split(' ')[0];
+                delete occupiedSlots[dateKey];
+            });
+            document.getElementById('reserveForm').reset();document.getElementById('reasonCount').textContent='0';
+            document.getElementById('f_alumni_value').value='';
+            selectedSlots=[];pendingFormData=null;
+            goToCalendar();renderCalendar();
+        }else{
+            showToast(data.msg||'提交失败','error');
         }
-        closeConfirmModal();
-        if(fail===0&&ok>0)showToast(`预约提交成功，共${ok}条，请等待审核`,'success');
-        else if(ok>0)showToast(`部分成功：${ok}条成功，${fail}条失败`,'warning');
-        else showToast('全部提交失败','error');
-        document.getElementById('reserveForm').reset();document.getElementById('reasonCount').textContent='0';
-        document.getElementById('f_alumni_value').value='';
-        selectedSlots=[];pendingFormDataList=[];
-        goToCalendar();renderCalendar();
     }catch(e){if(e.message!=='Unauthorized')showToast('网络错误，请稍后重试','error')}
     finally{btn.disabled=false;tx.textContent='确认提交';sp.classList.add('hidden')}
 }
