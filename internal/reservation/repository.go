@@ -9,12 +9,20 @@ import (
 
 // ReservationRepository 定义数据访问接口，方便微服务拆分时替换实现
 type ReservationRepository interface {
-	Create(res *Reservation) error
-	FindByID(id uint) (*Reservation, error)
-	FindByOpenID(openid string) ([]*Reservation, error)
-	FindByTimeRange(start, end time.Time) ([]*Reservation, error)
-	UpdateStatus(id uint, status int) error
-	Cancel(id uint, openid string) error
+	// --- 订单操作 ---
+	CreateOrder(order *ReservationOrder, slots []ReservationSlot) error // 事务：创建订单+时段
+	FindByOrderID(id uint) (*ReservationOrder, error)
+	FindByOpenID(openid string) ([]*ReservationOrder, error) // 返回订单及其关联的Slots
+
+	// --- 时段冲突检测 ---
+	FindSlotsByTimeRange(start, end time.Time) ([]ReservationSlot, error)
+
+	// --- 状态更新 ---
+	UpdateSlotStatus(slotID uint, status int) error
+	CancelOrder(orderID uint, openid string) error // 取消整个订单（所有时段）
+
+	// --- 兼容旧接口 ---
+	FindByID(id uint) (*ReservationOrder, error)
 }
 
 // reservationRepo 实现 ReservationRepository 接口
@@ -27,47 +35,69 @@ func NewReservationRepository(db *gorm.DB) ReservationRepository {
 	return &reservationRepo{db: db}
 }
 
-// Create 创建预约记录
-func (r *reservationRepo) Create(res *Reservation) error {
-	return r.db.Create(res).Error
+// CreateOrder 事务性创建订单和关联的时段记录
+func (r *reservationRepo) CreateOrder(order *ReservationOrder, slots []ReservationSlot) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+		for i := range slots {
+			slots[i].OrderID = order.ID
+		}
+		if len(slots) > 0 {
+			if err := tx.Create(&slots).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
-// FindByID 根据ID查询预约
-func (r *reservationRepo) FindByID(id uint) (*Reservation, error) {
-	var res Reservation
-	err := r.db.First(&res, id).Error
+// FindByOrderID 根据订单ID查询（预加载时段）
+func (r *reservationRepo) FindByOrderID(id uint) (*ReservationOrder, error) {
+	var order ReservationOrder
+	err := r.db.Preload("Slots").First(&order, id).Error
 	if err != nil {
 		return nil, err
 	}
-	return &res, nil
+	return &order, nil
 }
 
-// FindByOpenID 根据用户openid查询预约列表
-func (r *reservationRepo) FindByOpenID(openid string) ([]*Reservation, error) {
-	var reservations []*Reservation
-	err := r.db.Where("open_id = ?", openid).Order("created_at desc").Find(&reservations).Error
-	return reservations, err
+// FindByID 向后兼容别名
+func (r *reservationRepo) FindByID(id uint) (*ReservationOrder, error) {
+	return r.FindByOrderID(id)
 }
 
-// FindByTimeRange 查询指定时间范围内的预约（用于检查时间段占用）
-func (r *reservationRepo) FindByTimeRange(start, end time.Time) ([]*Reservation, error) {
-	var reservations []*Reservation
-	// 查询与指定时间段有交集的预约
+// FindByOpenID 根据用户openid查询预约列表（预加载时段，按创建时间倒序）
+func (r *reservationRepo) FindByOpenID(openid string) ([]*ReservationOrder, error) {
+	var orders []*ReservationOrder
+	err := r.db.Preload("Slots").
+		Where("open_id = ?", openid).
+		Order("created_at desc").
+		Find(&orders).Error
+	return orders, err
+}
+
+// FindSlotsByTimeRange 查询指定时间范围内有交集的已占用时段
+// 用于检查时间段冲突
+func (r *reservationRepo) FindSlotsByTimeRange(start, end time.Time) ([]ReservationSlot, error) {
+	var slots []ReservationSlot
 	err := r.db.Where("status IN ?", []int{StatusPending, StatusApproved}).
 		Where("start_time < ? AND end_time > ?", end, start).
-		Find(&reservations).Error
-	return reservations, err
+		Find(&slots).Error
+	return slots, err
 }
 
-// UpdateStatus 更新预约状态
-func (r *reservationRepo) UpdateStatus(id uint, status int) error {
-	return r.db.Model(&Reservation{}).Where("id = ?", id).Update("status", status).Error
+// UpdateSlotStatus 更新单个时段的状态
+func (r *reservationRepo) UpdateSlotStatus(slotID uint, status int) error {
+	return r.db.Model(&ReservationSlot{}).Where("id = ?", slotID).Update("status", status).Error
 }
 
-// Cancel 取消预约（仅限本人且状态为待审核或已通过）
-func (r *reservationRepo) Cancel(id uint, openid string) error {
-	result := r.db.Model(&Reservation{}).
-		Where("id = ? AND open_id = ? AND status IN ?", id, openid, []int{StatusPending, StatusApproved}).
+// CancelOrder 取消整个订单（将订单及所有时段状态设为已取消）
+func (r *reservationRepo) CancelOrder(orderID uint, openid string) error {
+	result := r.db.Model(&ReservationOrder{}).
+		Where("id = ? AND open_id = ? AND status IN ?",
+			orderID, openid, []int{StatusPending, StatusApproved}).
 		Update("status", StatusCancelled)
 
 	if result.Error != nil {
@@ -76,5 +106,11 @@ func (r *reservationRepo) Cancel(id uint, openid string) error {
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}
+
+	// 同时取消该订单下的所有待审核/已通过的时段
+	r.db.Model(&ReservationSlot{}).
+		Where("order_id = ? AND status IN ?", orderID, []int{StatusPending, StatusApproved}).
+		Update("status", StatusCancelled)
+
 	return nil
 }

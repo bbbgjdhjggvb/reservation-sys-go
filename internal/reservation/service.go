@@ -4,6 +4,7 @@ package reservation
 import (
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
@@ -16,6 +17,12 @@ type TimeSlot struct {
 	Status    string    `json:"status"` // "pending" 或 "approved"
 }
 
+// ParsedSlot 解析后的时间段
+type ParsedSlot struct {
+	StartTime time.Time
+	EndTime   time.Time
+}
+
 // ReservationService 预约业务服务
 type ReservationService struct {
 	repo ReservationRepository
@@ -26,66 +33,80 @@ func NewReservationService(repo ReservationRepository) *ReservationService {
 	return &ReservationService{repo: repo}
 }
 
-// Submit 提交预约申请
-func (s *ReservationService) Submit(openid string, req *SubmitReq) (*Reservation, error) {
-	// 解析时间
-	layout := "2006-01-02 15:04:05"
-	startTime, err1 := time.ParseInLocation(layout, req.StartTime, time.Local)
-	endTime, err2 := time.ParseInLocation(layout, req.EndTime, time.Local)
-
-	if err1 != nil || err2 != nil {
-		log.Printf("[error][reservation/service/Submit]: 时间解析失败，应该在handler层就已经处理好: startTime error: %v, endTime error: %v", err1, err2)
-		return nil, fmt.Errorf("时间格式错误")
+// Submit 批量提交预约申请（支持多时间段，自动合并同日连续时段）
+func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *SubmitReq) (*ReservationOrder, error) {
+	if len(slots) == 0 || len(slots) > 4 {
+		return nil, fmt.Errorf("预约时段数量必须在1~4之间")
 	}
 
-	if !endTime.After(startTime) {
-		log.Printf("[error][reservation/service/Submit]: 结束时间必须晚于开始时间，应该在handler层就已经处理好")
-		return nil, fmt.Errorf("结束时间必须晚于开始时间")
+	// 合并同一天的连续时间段
+	mergedSlots := mergeContinuousSlots(slots)
+	if len(mergedSlots) == 0 {
+		return nil, fmt.Errorf("合并后无有效时段")
+	}
+	log.Printf("[info][service/Submit] 原始时段数=%d, 合并后=%d", len(slots), len(mergedSlots))
+
+	// 逐个检查每个合并后的时段是否被占用
+	for i, slot := range mergedSlots {
+		occupied, err := s.repo.FindSlotsByTimeRange(slot.StartTime, slot.EndTime)
+		if err != nil {
+			log.Printf("[error][service/Submit] 查询第%d个时段占用失败: %v", i+1, err)
+			return nil, fmt.Errorf("查询第%d个时段占用失败: %v", i+1, err)
+		}
+		if len(occupied) > 0 {
+			log.Printf("[info][service/Submit] 第%d个时间段已被预约: %v ~ %v",
+				i+1, slot.StartTime.Format("01-02 15:04"), slot.EndTime.Format("15:04"))
+			return nil, fmt.Errorf("第%d个时间段已被预约", i+1)
+		}
 	}
 
-	// 检查时间段是否已被占用
-	occupied, err := s.repo.FindByTimeRange(startTime, endTime)
-	if err != nil {
-		log.Printf("[error][reservation/service/Submit]: 查询占用时段失败: %v", err)
-		return nil, fmt.Errorf("查询占用时段失败: %v", err)
-	}
-
-	if len(occupied) > 0 {
-		log.Printf("[info][reservation/service/Submit]: 该时间段已被预约，无法提交")
-		return nil, fmt.Errorf("该时间段已被预约")
-	}
-
-	// 生成订单号：日期+随机数
 	orderNo := generateOrderNo()
 
-	// 创建预约记录
-	res := &Reservation{
-		OrderNo:         orderNo,
-		OpenID:          openid,
-		ApplicationName: req.ApplicantName,
-		Reason:          req.Reason,
-		Phone:           req.Phone,
-		StartTime:       startTime,
-		EndTime:         endTime,
-		Status:          StatusPending,
+	// 构建订单记录（TotalSlots 使用合并后的数量）
+	order := &ReservationOrder{
+		OrderNo:           orderNo,
+		OpenID:            openid,
+		ApplicantName:     req.ApplicantName,
+		AlumniAssociation: req.AlumniAssociation,
+		Year:              req.Year,
+		Major:             req.Major,
+		Reason:            req.Reason,
+		Phone:             req.Phone,
+		TotalSlots:        len(mergedSlots),
+		Status:            StatusPending,
 	}
 
-	if err := s.repo.Create(res); err != nil {
-		log.Printf("[error][reservation/service/Submit]: 创建预约失败: %v", err)
+	// 构建时段记录（使用合并后的时段）
+	slotRecords := make([]ReservationSlot, len(mergedSlots))
+	for i, slot := range mergedSlots {
+		slotRecords[i] = ReservationSlot{
+			StartTime: slot.StartTime,
+			EndTime:   slot.EndTime,
+			Status:    StatusPending,
+		}
+	}
+
+	// 事务性创建订单+所有时段
+	if err := s.repo.CreateOrder(order, slotRecords); err != nil {
+		log.Printf("[error][service/Submit] 创建订单失败: %v", err)
 		return nil, fmt.Errorf("创建预约失败: %v", err)
 	}
 
-	return res, nil
+	return order, nil
 }
 
-// GetMyReservations 获取用户的预约列表
-func (s *ReservationService) GetMyReservations(openid string) ([]*Reservation, error) {
+// GetOrderByID 根据订单ID查询（预加载时段），供Handler在创建后重新查询
+func (s *ReservationService) GetOrderByID(id uint) (*ReservationOrder, error) {
+	return s.repo.FindByOrderID(id)
+}
+
+// GetMyReservations 获取用户的预约列表（含时段明细）
+func (s *ReservationService) GetMyReservations(openid string) ([]*ReservationOrder, error) {
 	return s.repo.FindByOpenID(openid)
 }
 
 // GetOccupiedSlots 获取指定日期的已占用时间段
 func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlot, error) {
-	// 解析日期，构建当天的起止时间
 	day, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	if err != nil {
 		return nil, fmt.Errorf("日期格式错误")
@@ -94,56 +115,96 @@ func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlot, error) {
 	startOfDay := day
 	endOfDay := day.Add(24 * time.Hour)
 
-	// 查询当天的预约
-	reservations, err := s.repo.FindByTimeRange(startOfDay, endOfDay)
+	slots, err := s.repo.FindSlotsByTimeRange(startOfDay, endOfDay)
 	if err != nil {
-		log.Printf("[error][reservation/service/GetOccupiedSlots]: 查询占用时段失败: %v", err)
+		log.Printf("[error][service/GetOccupiedSlots] 查询占用时段失败: %v", err)
 		return nil, err
 	}
 
-	// 转换为时间段格式
-	slots := make([]TimeSlot, 0, len(reservations))
-	for _, res := range reservations {
+	result := make([]TimeSlot, 0, len(slots))
+	for _, slot := range slots {
 		status := "pending"
-		if res.Status == StatusApproved {
+		if slot.Status == StatusApproved {
 			status = "approved"
 		}
-		slots = append(slots, TimeSlot{
-			StartTime: res.StartTime,
-			EndTime:   res.EndTime,
+		result = append(result, TimeSlot{
+			StartTime: slot.StartTime,
+			EndTime:   slot.EndTime,
 			Status:    status,
 		})
 	}
 
-	return slots, nil
+	return result, nil
 }
 
-// Cancel 取消预约
-func (s *ReservationService) Cancel(id uint, openid string) error {
-	// 检查预约是否存在且属于当前用户
-	res, err := s.repo.FindByID(id)
+// Cancel 取消整个订单（按orderID）
+func (s *ReservationService) Cancel(orderID uint, openid string) error {
+	order, err := s.repo.FindByOrderID(orderID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			log.Printf("[info][service][Cancel]: 预约不存在")
 			return fmt.Errorf("预约不存在")
 		}
-		log.Printf("[error][service][Cancel]: 查询预约失败: %v", err)
+		log.Printf("[error][service/Cancel] 查询订单失败: %v", err)
 		return err
 	}
 
-	if res.OpenID != openid {
-		log.Printf("[error][service][Cancel]: 无权操作此预约")
+	if order.OpenID != openid {
 		return fmt.Errorf("无权操作此预约")
 	}
 
-	if res.Status != StatusPending && res.Status != StatusApproved {
+	if order.Status != StatusPending && order.Status != StatusApproved {
 		return fmt.Errorf("当前状态无法取消")
 	}
 
-	return s.repo.Cancel(id, openid)
+	return s.repo.CancelOrder(orderID, openid)
 }
 
 // generateOrderNo 生成订单号
 func generateOrderNo() string {
 	return fmt.Sprintf("R%s%d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%10000)
+}
+
+// mergeContinuousSlots 将同一天的连续时间段合并为一条记录
+// 合并规则：
+//   - 按 StartTime 升序排列
+//   - 如果两个时段在同一天且前一个的 EndTime == 后一个的 StartTime（首尾相接），则合并
+//   - 例如: [09:00-10:00, 10:00-11:00] → [09:00-11:00]
+func mergeContinuousSlots(slots []ParsedSlot) []ParsedSlot {
+	if len(slots) <= 1 {
+		return slots
+	}
+
+	// 按开始时间升序排序
+	sorted := make([]ParsedSlot, len(slots))
+	copy(sorted, slots)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].StartTime.Before(sorted[j].StartTime)
+	})
+
+	// 逐个合并连续时段
+	merged := []ParsedSlot{sorted[0]}
+	for i := 1; i < len(sorted); i++ {
+		last := &merged[len(merged)-1]
+		curr := sorted[i]
+
+		if isSameDay(last.StartTime, curr.StartTime) && last.EndTime.Equal(curr.StartTime) {
+			// 同一天且首尾相接，合并为一段
+			last.EndTime = curr.EndTime
+			log.Printf("[info][mergeContinuousSlots] 合并时段: ...%s ~ %s + ...%s ~ %s → ...%s ~ %s",
+				last.StartTime.Format("15:04"), last.StartTime.Format("15:04"),
+				curr.StartTime.Format("15:04"), curr.EndTime.Format("15:04"),
+				last.StartTime.Format("15:04"), last.EndTime.Format("15:04"))
+		} else {
+			merged = append(merged, curr)
+		}
+	}
+
+	return merged
+}
+
+// isSameDay 判断两个时间是否在同一天
+func isSameDay(t1, t2 time.Time) bool {
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
 }

@@ -2,6 +2,8 @@
 package reservation
 
 import (
+	"reservation-sys/internal/platform"
+
 	"gorm.io/gorm"
 )
 
@@ -10,8 +12,9 @@ var reservationService *ReservationService
 
 // InitModule 初始化预约模块
 func InitModule(db *gorm.DB) {
-	// 自动迁移表结构
-	db.AutoMigrate(&Reservation{})
+	// 自动迁移表结构（订单表 + 时段明细表）
+	platform.AutoMigrate(db, &ReservationOrder{})
+	platform.AutoMigrate(db, &ReservationSlot{})
 
 	// 初始化 Repository
 	repo := NewReservationRepository(db)
