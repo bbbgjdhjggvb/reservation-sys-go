@@ -4,6 +4,7 @@ package reservation
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -46,20 +47,6 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 	}
 	log.Printf("[info][service/Submit] 原始时段数=%d, 合并后=%d", len(slots), len(mergedSlots))
 
-	// 逐个检查每个合并后的时段是否被占用
-	for i, slot := range mergedSlots {
-		occupied, err := s.repo.FindSlotsByTimeRange(slot.StartTime, slot.EndTime)
-		if err != nil {
-			log.Printf("[error][service/Submit] 查询第%d个时段占用失败: %v", i+1, err)
-			return nil, fmt.Errorf("查询第%d个时段占用失败: %v", i+1, err)
-		}
-		if len(occupied) > 0 {
-			log.Printf("[info][service/Submit] 第%d个时间段已被预约: %v ~ %v",
-				i+1, slot.StartTime.Format("01-02 15:04"), slot.EndTime.Format("15:04"))
-			return nil, fmt.Errorf("第%d个时间段已被预约", i+1)
-		}
-	}
-
 	orderNo := generateOrderNo()
 
 	// 构建订单记录（TotalSlots 使用合并后的数量）
@@ -86,8 +73,8 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 		}
 	}
 
-	// 事务性创建订单+所有时段
-	if err := s.repo.CreateOrder(order, slotRecords); err != nil {
+	// 原子化创建订单+冲突检测（事务内行锁，防止并发双重预约）
+	if err := s.repo.CreateOrderWithLock(order, slotRecords); err != nil {
 		log.Printf("[error][service/Submit] 创建订单失败: %v", err)
 		return nil, fmt.Errorf("创建预约失败: %v", err)
 	}
@@ -159,9 +146,9 @@ func (s *ReservationService) Cancel(orderID uint, openid string) error {
 	return s.repo.CancelOrder(orderID, openid)
 }
 
-// generateOrderNo 生成订单号
+// generateOrderNo 生成订单号（含随机熵，防止高并发碰撞）
 func generateOrderNo() string {
-	return fmt.Sprintf("R%s%d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%10000)
+	return fmt.Sprintf("R%s%04x", time.Now().Format("20060102150405"), rand.Uint32()%0xFFFF)
 }
 
 // mergeContinuousSlots 将同一天的连续时间段合并为一条记录

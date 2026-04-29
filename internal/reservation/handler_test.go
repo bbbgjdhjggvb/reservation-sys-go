@@ -4,6 +4,7 @@ package reservation
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -51,8 +52,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		mockRepo.EXPECT().FindSlotsByTimeRange(gomock.Any(), gomock.Any()).Return([]ReservationSlot{}, nil).Times(1)
-		mockRepo.EXPECT().CreateOrder(gomock.Any(), gomock.Any()).
+		mockRepo.EXPECT().CreateOrderWithLock(gomock.Any(), gomock.Any()).
 			Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) { order.ID = 100 })
 		mockRepo.EXPECT().FindByOrderID(uint(100)).
 			Return(&ReservationOrder{
@@ -89,9 +89,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		mockRepo.EXPECT().FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]ReservationSlot{}, nil).Times(3)
-		mockRepo.EXPECT().CreateOrder(gomock.Any(), gomock.Any()).
+		mockRepo.EXPECT().CreateOrderWithLock(gomock.Any(), gomock.Any()).
 			Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) { order.ID = 200 })
 		mockRepo.EXPECT().FindByOrderID(uint(200)).
 			Return(&ReservationOrder{
@@ -435,7 +433,7 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 		hdl.SubmitHandler(c)
 	})
 
-	t.Run("提交时时间段已被占用", func(t *testing.T) {
+	t.Run("提交时时间段已被占用(原子检测)", func(t *testing.T) {
 		body := SubmitReq{
 			ApplicantName: "张三", AlumniAssociation: "某校友会", Year: 2020,
 			Major: "CS", Reason: "测试占用检测", Phone: "13800138000",
@@ -445,10 +443,9 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		occupiedSlot := ReservationSlot{ID: 99, Status: StatusApproved}
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]ReservationSlot{occupiedSlot}, nil).Times(1)
+			CreateOrderWithLock(gomock.Any(), gomock.Any()).
+			Return(fmt.Errorf("第1个时间段已被预约"))
 
 		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")

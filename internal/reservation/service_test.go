@@ -3,6 +3,7 @@ package reservation
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -68,10 +69,7 @@ func TestReservationService_Submit(t *testing.T) {
 			req:   req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil).Times(1)
-				mockRepo.EXPECT().
-					CreateOrder(gomock.Any(), gomock.Any()).
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) {
 						order.ID = 100
 						assert.Equal(t, 1, len(slots))
@@ -93,10 +91,7 @@ func TestReservationService_Submit(t *testing.T) {
 			req: req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil).Times(3)
-				mockRepo.EXPECT().
-					CreateOrder(gomock.Any(), gomock.Any()).
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) {
 						order.ID = 101
 						assert.Equal(t, 3, len(slots))
@@ -106,47 +101,30 @@ func TestReservationService_Submit(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:   "第1个时段已被占用",
+			name:   "第1个时段已被占用(原子检测)",
 			openid: "test_openid_001",
 			slots: []ParsedSlot{testSlot1},
 			req:   req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{{ID: 1}}, nil)
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
+					Return(fmt.Errorf("第1个时间段已被预约"))
 			},
 			wantErr: true,
 			errMsg:  "第1个时间段已被预约",
 		},
 		{
-			name:   "第2个时段已被占用(多时段场景)",
+			name:   "第2个时段已被占用(多时段场景，原子检测)",
 			openid: "test_openid_001",
 			slots: []ParsedSlot{testSlot1, testSlot2},
 			req:   req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil). // 第1个空闲
-					Times(1)
-				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{{ID: 5}}, nil) // 第2个被占用
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
+					Return(fmt.Errorf("第2个时间段已被预约"))
 			},
 			wantErr: true,
 			errMsg:  "第2个时间段已被预约",
-		},
-		{
-			name:   "查询占用时段失败(DB错误)",
-			openid: "test_openid_001",
-			slots: []ParsedSlot{testSlot1},
-			req:   req,
-			mockSetup: func() {
-				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("db error"))
-			},
-			wantErr: true,
-			errMsg:  "查询第1个时段占用失败",
 		},
 		{
 			name:   "创建订单失败(DB错误)",
@@ -155,11 +133,8 @@ func TestReservationService_Submit(t *testing.T) {
 			req:   req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil)
-				mockRepo.EXPECT().
-					CreateOrder(gomock.Any(), gomock.Any()).
-					Return(errors.New("insert failed"))
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
+					Return(fmt.Errorf("创建预约失败: insert failed"))
 			},
 			wantErr: true,
 			errMsg:  "创建预约失败",
@@ -171,12 +146,9 @@ func TestReservationService_Submit(t *testing.T) {
 			slots: []ParsedSlot{testSlot1, testSlot1Continuous},
 			req:   req,
 			mockSetup: func() {
-				// 合并后只有1个时段，所以 FindSlotsByTimeRange 只调用1次
+				// 合并后只有1个时段，由 CreateOrderWithLock 内部处理冲突检测
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil).Times(1)
-				mockRepo.EXPECT().
-					CreateOrder(gomock.Any(), gomock.Any()).
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) {
 						order.ID = 102
 						assert.Equal(t, 1, len(slots), "合并后应只有1个slot记录")
@@ -196,10 +168,7 @@ func TestReservationService_Submit(t *testing.T) {
 			mockSetup: func() {
 				// 合并后有2个时段
 				mockRepo.EXPECT().
-					FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-					Return([]ReservationSlot{}, nil).Times(2)
-				mockRepo.EXPECT().
-					CreateOrder(gomock.Any(), gomock.Any()).
+					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *ReservationOrder, slots []ReservationSlot) {
 						order.ID = 103
 						assert.Equal(t, 2, len(slots), "合并后应只有2个slot记录")

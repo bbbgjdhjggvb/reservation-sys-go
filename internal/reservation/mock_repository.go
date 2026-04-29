@@ -33,18 +33,18 @@ func (m *MockReservationRepository) EXPECT() *MockReservationRepositoryMockRecor
 	return m.recorder
 }
 
-// CreateOrder mocks base method.
-func (m *MockReservationRepository) CreateOrder(order *ReservationOrder, slots []ReservationSlot) error {
+// CreateOrderWithLock mocks base method.
+func (m *MockReservationRepository) CreateOrderWithLock(order *ReservationOrder, slots []ReservationSlot) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrder", order, slots)
+	ret := m.ctrl.Call(m, "CreateOrderWithLock", order, slots)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateOrder indicates an expected call of CreateOrder.
-func (mr *MockReservationRepositoryMockRecorder) CreateOrder(order, slots interface{}) *gomock.Call {
+// CreateOrderWithLock indicates an expected call of CreateOrderWithLock.
+func (mr *MockReservationRepositoryMockRecorder) CreateOrderWithLock(order, slots interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockReservationRepository)(nil).CreateOrder), order, slots)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrderWithLock", reflect.TypeOf((*MockReservationRepository)(nil).CreateOrderWithLock), order, slots)
 }
 
 // FindByOrderID mocks base method.
