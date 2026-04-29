@@ -60,7 +60,7 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v1.test.yaml
+      - CONFIG_PATH=configs/config_v1.yaml
     volumes:
       - ./configs:/app/configs:ro
     command: ["/app/v1"]
@@ -80,7 +80,7 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v2.test.yaml
+      - CONFIG_PATH=configs/config_v2.yaml
     volumes:
       - ./configs:/app/configs:ro
       - ./internal/reservation/frontend:/app/internal/reservation/frontend:ro

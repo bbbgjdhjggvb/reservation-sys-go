@@ -8,7 +8,7 @@
 #   stop     停止 v2 服务
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CONFIG_DEBUG="$PROJECT_ROOT/configs/config_v2.debug.yaml"
+CONFIG_DEBUG="$PROJECT_ROOT/configs/config_v2.local.yaml"
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.local.yaml"
 BASE_URL="http://localhost:8081"
 TEST_DATA_DIR="$PROJECT_ROOT/.test-data"

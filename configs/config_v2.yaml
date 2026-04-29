@@ -1,35 +1,33 @@
-# 预约服务配置 (v2 - Reservation Service)
+# 预约服务配置 (v2) - 云端部署/测试环境
 # 用途: 处理用户预约相关业务
+# 使用环境: docker-compose.prod.yaml / docker-compose.test.yaml
 
 server:
-  port: ":8081"        # 预约服务端口 (与微信服务区分)
-  mode: "debug"        # Gin 运行模式: debug, release, test
-  # release 模式下请将下方改为实际的前端域名白名单
+  port: ":8081"
+  mode: "debug"
   cors_allow_origins:
-    - "https://your-frontend-domain.com"
-    - "http://localhost:8083"   # 本地 Swagger 调试
+    - "https://106.52.23.213"
+    - "http://localhost:8083"
 
 mysql:
-  host: "127.0.0.1"
+  host: "mysql"            # Docker 服务名
   port: 3306
   user: "res_user"
   password: "12345678"
   dbname: "home_xy"
   max_idle_conns: 10
-  max_open_conns: 100
+  max_open_conns: 50
 
 redis:
-  host: "127.0.0.1"
+  host: "redis"            # Docker 服务名
   port: 6379
   password: ""
   db: 0
 
 jwt:
   secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
-  expire_time: 24       # JWT 过期时间 (小时)
+  expire_time: 24
 
-# 微信配置 (用于获取用户信息，可选)
-# 未来微服务架构中将通过 gRPC 调用 v1 服务
 wechat:
   app_id: ""
   app_secret: ""

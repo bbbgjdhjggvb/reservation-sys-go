@@ -1,12 +1,15 @@
-# 预约服务配置 - 本地 Docker 开发环境
-# 使用方法: 复制为 config_v2.yaml 或修改 cmd/api/v2/main.go 中的路径
+# 预约服务配置 (v2) - 本地开发环境
+# 用途: 处理用户预约相关业务
+# 使用环境: docker-compose.local.yaml / scripts/env.sh (go run 直连调试)
 
 server:
   port: ":8081"
   mode: "debug"
+  cors_allow_origins:       # 本地开发：宽松策略
+    - "*"
 
 mysql:
-  host: "mysql"           # Docker 服务名
+  host: "mysql"             # Docker 服务名（容器内）或 localhost（直连映射端口 3307）
   port: 3306
   user: "res_user"
   password: "12345678"
@@ -15,7 +18,7 @@ mysql:
   max_open_conns: 100
 
 redis:
-  host: "redis"           # Docker 服务名
+  host: "redis"             # Docker 服务名（容器内）或 localhost（直连映射端口 6380）
   port: 6379
   password: ""
   db: 0

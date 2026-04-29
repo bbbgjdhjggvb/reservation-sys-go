@@ -1,32 +1,33 @@
-# 微信服务号配置 (v1 - WeChat Service)
+# 微信服务号配置 (v1) - 云端部署/测试环境
 # 用途: 处理微信服务器消息、OAuth认证
+# 使用环境: docker-compose.prod.yaml / docker-compose.test.yaml
 
 server:
-  port: ":8080" # Web 服务监听端口
-  mode: "debug" # Gin 运行模式: debug, release, test
+  port: ":8080"
+  mode: "debug"
 
 wechat:
   app_id: "wx84d6833105361902"
   app_secret: "d37c9085aa2d446fcd60e8c4236fee3d"
   token: "1yYfrKx0DNgyrglRsvMs9KQKHlp0ON3jhnjJUDI+mmg="
   menu_config_path: "configs/menu.json"
-  frontend_url: "http://www.mytestsite.cloud/reserve" # 前端预约页面URL（本地开发）
+  frontend_url: "http://106.52.23.213/reserve"
 
 mysql:
-  host: "127.0.0.1"
+  host: "mysql"           # Docker 服务名
   port: 3306
   user: "res_user"
   password: "12345678"
   dbname: "home_xy"
   max_idle_conns: 10
-  max_open_conns: 100
+  max_open_conns: 50
 
 redis:
-  host: "127.0.0.1"
+  host: "redis"           # Docker 服务名
   port: 6379
   password: ""
   db: 0
 
 jwt:
   secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
-  expire_time: 24 # JWT 过期时间 (小时)
+  expire_time: 24

@@ -12,10 +12,10 @@ services:
     container_name: reservation-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_prod}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       MYSQL_DATABASE: home_xy
       MYSQL_USER: res_user
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-prod_password_123}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-12345678}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
