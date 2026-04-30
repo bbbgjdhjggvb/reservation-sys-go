@@ -78,6 +78,6 @@ go run cmd/api/swagger/main.go
 go run cmd/tool/jwt/gen_token.go
 
 # 运行后端程序
-go run cmd/api/v2/main.go --config configs/config_v2.debug.yaml
+go run cmd/api/v2/main.go --config configs/config_v2.local.yaml
 ```
 在浏览器UI界面，点击 try it out 然后再点击 execute，就可以查看响应

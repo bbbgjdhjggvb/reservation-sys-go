@@ -11,7 +11,4 @@ sudo ss -tulnp
 sudo ss -tulnp | grep 8080
 ```
 
-# 服务器域名
-```
-
-```
+# curl 工具

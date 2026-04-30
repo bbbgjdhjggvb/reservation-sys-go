@@ -1,6 +1,6 @@
 # 远程仓库管理
 
-```
+```sh
 #  添加远程仓库
 git remote add <name> <url>
 git remote add server ssh://root@106.52.23.213/root/git/reservation_sys_go.git
@@ -17,9 +17,11 @@ git remote remove <name>
 git remote remove server
 ```
 
+---
+
 # 代码推送
 
-```
+```sh
 # 推送分支到远程仓库
 git push <name> <branch>
 git push server master
@@ -28,9 +30,11 @@ git push server master
 git push -u server main
 ```
 
+---
+
 # 拉取代码
 
-```
+```sh
 # 拉取server仓库的主分支
 git pull server master
 
@@ -41,9 +45,11 @@ git branch -r
 git checkout -b feature server/feature
 ```
 
+---
+
 # 分支操作
 
-```
+```sh
 # 查看本地分支
 git branch
 
@@ -51,32 +57,37 @@ git branch
 git branch -a
 
 # 创建新的分支
-git checkout -b feature
+git switch -c workspace
 
 # 切换分支
-git checkout feature
+git switch workspace
 
 # 重命名当前分支
 git branch -M main
 
 # 删除本地分支
-git branch -d feature
+git branch -d workspace
 
 # 删除远程分支
-git push server --delete feature
+git push server --delete workspace
 ```
+
+# 分支合并
+在合并之前先在`master`分支进行同步，`git pull server master`
+```sh
+# 合并之前要进行提交，在 workspace 分支
+git add <需要提交的文件>
+git commit -m "提交介绍"
+
+# 切换到主分支
+git switch master
+git merge workspace
+```
+
+---
 
 # 工作流程
-
-```
-# 本地
-git add .
-git commit -m ""
-git push server master
-
-# 服务器部署
-cd /root/workspace/reservation_sys_go
-
-# orgin 是在执行 git clone 时自动给远程仓库起的名字
-git pull orgin master
-```
+1. 在本地 workspace 分支进行修改
+2. 修改完后 commit 
+3. 切换到 master 分支，先进行 pull，执行合并
+4. push 到远程仓库
