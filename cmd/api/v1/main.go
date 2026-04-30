@@ -71,7 +71,7 @@ func main() {
 	})
 
 	// 初始化 auth 模块
-	auth.InitModule(db, oa, cfg.Wechat.FrontendURL)
+	auth.InitModule(db, oa, cfg.Wechat.DefaultRedirect, cfg.Wechat.RedirectURLs)
 
 	authHdl := auth.GetUserAuthHandler()
 	authSvc := auth.GetUserAuthService()
