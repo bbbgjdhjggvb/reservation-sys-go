@@ -21,15 +21,25 @@ import (
 )
 
 type UserAuthHandler struct {
-	svc         *UserAuthService
-	frontendURL string
+	svc             *UserAuthService
+	defaultRedirect string
+	redirectURLs    map[string]string
 }
 
-func NewUserAuthHandler(svc *UserAuthService, frontendURL string) *UserAuthHandler {
+func NewUserAuthHandler(svc *UserAuthService, defaultRedirect string, redirectURLs map[string]string) *UserAuthHandler {
 	return &UserAuthHandler{
-		svc:         svc,
-		frontendURL: frontendURL,
+		svc:             svc,
+		defaultRedirect: defaultRedirect,
+		redirectURLs:    redirectURLs,
 	}
+}
+
+// buildRedirectURL 根据 state 参数构建重定向地址，未匹配时使用默认地址
+func (h *UserAuthHandler) buildRedirectURL(token, state string) string {
+	if url, ok := h.redirectURLs[state]; ok && url != "" {
+		return url + "?token=" + token
+	}
+	return h.defaultRedirect + "?token=" + token
 }
 
 func (h *UserAuthHandler) WeChatCallBack(c *gin.Context) {
@@ -67,8 +77,10 @@ func (h *UserAuthHandler) WeChatCallBack(c *gin.Context) {
 	}
 	log.Printf("[info][auth/handler/WeChatCallBack]: 生成JWT Token成功: %s", token)
 
-	// 重定向到预约网页界面
-	redirectURL := h.frontendURL + "?token=" + token
-	log.Printf("[info][auth/handler/WeChatCallBack]: 重定向到预约界面: %s", redirectURL)
+	// 根据 state 参数决定重定向目标页面（未匹配时使用默认地址）
+	state := c.Query("state")
+	redirectURL := h.buildRedirectURL(token, state)
+
+	log.Printf("[info][auth/handler/WeChatCallBack]: 重定向到: %s", redirectURL)
 	c.Redirect(http.StatusFound, redirectURL)
 }

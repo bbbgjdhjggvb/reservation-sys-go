@@ -12,7 +12,7 @@ var (
 	handler     *UserAuthHandler
 )
 
-func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, frontendURL string) {
+func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, defaultRedirect string, redirectURLs map[string]string) {
 	// 自动迁移表结构
 	platform.AutoMigrate(db, &User{})
 
@@ -20,7 +20,7 @@ func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, frontendURL st
 	oauth := NewWechatOAuthClient(oa)
 	provider := NewWechatUserInfoProvider(oa)
 	instance = NewUserAuthServiceWithUserInfo(repo, oauth, provider)
-	handler = NewUserAuthHandler(instance, frontendURL)
+	handler = NewUserAuthHandler(instance, defaultRedirect, redirectURLs)
 }
 
 func GetUserAuthService() *UserAuthService {

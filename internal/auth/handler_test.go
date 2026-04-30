@@ -13,7 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testFrontendURL = "http://localhost:8081/reserve"
+const testDefaultRedirect = "http://localhost:8081/reserve"
+
+var testRedirectURLs = map[string]string{
+	"reserve":   "http://localhost:8081/reserve",
+	"myorders":  "http://localhost:8081/myorders",
+}
 
 // ---------- WeChatCallBack Handler 测试 ----------
 
@@ -21,7 +26,7 @@ func TestWeChatCallBack_MissingCode(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	hdl := NewUserAuthHandler(nil, testFrontendURL)
+	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
 	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
 
 	// 不带 code 参数
@@ -41,7 +46,7 @@ func TestWeChatCallBack_EmptyCode(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	hdl := NewUserAuthHandler(nil, testFrontendURL)
+	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
 	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
 
 	// code 参数为空字符串
@@ -65,7 +70,7 @@ func TestWeChatCallBack_LoginByCodeFail(t *testing.T) {
 	mockRepo := NewMockUserRepository(ctrl)
 
 	svc := NewUserAuthService(mockRepo, mockOAuth)
-	hdl := NewUserAuthHandler(svc, testFrontendURL)
+	hdl := NewUserAuthHandler(svc, testDefaultRedirect, testRedirectURLs)
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -96,7 +101,7 @@ func TestWeChatCallBack_Success(t *testing.T) {
 	mockRepo := NewMockUserRepository(ctrl)
 
 	svc := NewUserAuthService(mockRepo, mockOAuth)
-	hdl := NewUserAuthHandler(svc, testFrontendURL)
+	hdl := NewUserAuthHandler(svc, testDefaultRedirect, testRedirectURLs)
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -117,7 +122,7 @@ func TestWeChatCallBack_Success(t *testing.T) {
 	assert.Equal(t, http.StatusFound, w.Code)
 	location := w.Header().Get("Location")
 	assert.Contains(t, location, "token=")
-	assert.Contains(t, location, testFrontendURL)
+	assert.Contains(t, location, testDefaultRedirect)
 }
 
 // ---------- User 模型测试 ----------
@@ -130,10 +135,10 @@ func TestUser_TableName(t *testing.T) {
 // ---------- Handler 构造函数测试 ----------
 
 func TestNewUserAuthHandler(t *testing.T) {
-	hdl := NewUserAuthHandler(nil, testFrontendURL)
+	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
 	assert.NotNil(t, hdl)
 	assert.Nil(t, hdl.svc)
-	assert.Equal(t, testFrontendURL, hdl.frontendURL)
+	assert.Equal(t, testDefaultRedirect, hdl.defaultRedirect)
 }
 
 // ---------- JSON 响应格式测试 ----------
@@ -142,7 +147,7 @@ func TestWeChatCallBack_ResponseIsJSON(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	hdl := NewUserAuthHandler(nil, testFrontendURL)
+	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
 	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
 
 	w := httptest.NewRecorder()
