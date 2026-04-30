@@ -6,7 +6,12 @@
                 {
                     "type": "view",
                     "name": "预约场地",
-                    "url": "http://open.weixin.qq.com/connect/oauth2/authorize?appid=wx84d6833105361902&redirect_uri=http%3A%2F%2F106.52.23.213%2Fapi%2Fv1%2Fauth%2Fcallback&response_type=code&scope=snsapi_base#wechat_redirect"
+                    "url": "http://open.weixin.qq.com/connect/oauth2/authorize?appid=wx84d6833105361902&redirect_uri=http%3A%2F%2F106.52.23.213%2Fapi%2Fv1%2Fauth%2Fcallback&response_type=code&scope=snsapi_base&state=reserve#wechat_redirect"
+                },
+                {
+                    "type": "view",
+                    "name": "查询预约",
+                    "url": "http://open.weixin.qq.com/connect/oauth2/authorize?appid=wx84d6833105361902&redirect_uri=http%3A%2F%2F106.52.23.213%2Fapi%2Fv1%2Fauth%2Fcallback&response_type=code&scope=snsapi_base&state=myorders#wechat_redirect"
                 }
             ]
         },

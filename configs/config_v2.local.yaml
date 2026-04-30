@@ -9,8 +9,8 @@ server:
     - "*"
 
 mysql:
-  host: "mysql"             # Docker 服务名（容器内）或 localhost（直连映射端口 3307）
-  port: 3306
+  host: "localhost"         # go run 直连用 localhost + 映射端口 3307；Docker 内运行改为 "mysql"
+  port: 3307                # 宿主机映射端口（Docker 内运行改为 3306）
   user: "res_user"
   password: "12345678"
   dbname: "home_xy"

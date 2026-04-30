@@ -11,7 +11,10 @@ wechat:
   app_secret: "d37c9085aa2d446fcd60e8c4236fee3d"
   token: "1yYfrKx0DNgyrglRsvMs9KQKHlp0ON3jhnjJUDI+mmg="
   menu_config_path: "configs/menu.json"
-  frontend_url: "http://106.52.23.213/reserve"
+  default_redirect: "http://106.52.23.213/reserve"
+  redirect_urls:
+    reserve: "http://106.52.23.213/reserve"
+    myorders: "http://106.52.23.213/myorders"
 
 mysql:
   host: "mysql"           # Docker 服务名

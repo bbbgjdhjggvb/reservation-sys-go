@@ -11,7 +11,10 @@ wechat:
   app_secret: "d37c9085aa2d446fcd60e8c4236fee3d"
   token: "1yYfrKx0DNgyrglRsvMs9KQKHlp0ON3jhnjJUDI+mmg="
   menu_config_path: "configs/menu.json"
-  frontend_url: "http://localhost:8081/reserve"   # 本地开发用 ngrok/tunnel 地址
+  default_redirect: "http://localhost:8081/reserve"
+  redirect_urls:
+    reserve: "http://localhost:8081/reserve"
+    myorders: "http://localhost:8081/myorders"
 
 mysql:
   host: "mysql"            # Docker 服务名
