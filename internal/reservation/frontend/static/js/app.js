@@ -54,8 +54,18 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         authToken = urlParams.get('token') || localStorage.getItem('auth_token') || null;
+
+        // 保存token到localStorage（用于跨页面传递）
+        if (authToken && !localStorage.getItem('auth_token')) {
+            localStorage.setItem('auth_token', authToken);
+        }
+
         if (!authToken) {
             document.getElementById('tokenError').classList.remove('hidden');
+            // 隐藏所有功能内容，只显示未授权提示
+            const panel = document.querySelector('.bg-white.rounded-lg.shadow');
+            if (panel) panel.classList.add('hidden');
+            return;
         }
 
         const today = new Date();
@@ -132,7 +142,7 @@ async function renderCalendar() {
 
         TIME_SLOTS.forEach(slot => {
             html += `<div class="time-label">${slot.label}</div>`;
-            for (let i=0;i<7;i++) {
+            for (let i=0;i<14;i++) {
                 const day = addDays(currentWeekStart, i); const ds=formatDate(day);
                 const inPast=isSlotInPast(ds,slot.end), beyond=isBeyondBookable(day), pastD=isPastDay(day);
                 const occ=getSlotStatus(ds, slot.start, slot.end);
@@ -177,7 +187,12 @@ function getSlotStatus(dateStr, startTime, endTime) {
     const slots=occupiedSlots[dateStr]||[];
     for(const s of slots){
         const sE=extractTime(s.end_time), sS=extractTime(s.start_time);
-        if(startTime<sE&&endTime>sS)return s.status==='approved'?'approved':'pending';
+        if(startTime<sE&&endTime>sS){
+            // /reservation/occupied 接口返回 status 为字符串: "pending" / "approved"
+            // 只有待审核和已通过会占用时段；已拒绝/已完成/已取消的时段不会出现在结果中（后端已过滤）
+            if(s.status==='approved')return 'approved';
+            if(s.status==='pending')return 'pending';
+        }
     }return null;
 }
 function extractTime(dt){return dt.includes(' ')?dt.split(' ')[1].substring(0,5):dt.substring(0,5);}

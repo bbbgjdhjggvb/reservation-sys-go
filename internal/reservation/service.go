@@ -93,7 +93,7 @@ func (s *ReservationService) GetMyReservations(openid string) ([]*ReservationOrd
 }
 
 // GetOccupiedSlots 获取指定日期的已占用时间段
-func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlot, error) {
+func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlotResp, error) {
 	day, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	if err != nil {
 		return nil, fmt.Errorf("日期格式错误")
@@ -108,15 +108,15 @@ func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlot, error) {
 		return nil, err
 	}
 
-	result := make([]TimeSlot, 0, len(slots))
+	result := make([]TimeSlotResp, 0, len(slots))
 	for _, slot := range slots {
 		status := "pending"
 		if slot.Status == StatusApproved {
 			status = "approved"
 		}
-		result = append(result, TimeSlot{
-			StartTime: slot.StartTime,
-			EndTime:   slot.EndTime,
+		result = append(result, TimeSlotResp{
+			StartTime: slot.StartTime.Format("2006-01-02 15:04"),
+			EndTime:   slot.EndTime.Format("2006-01-02 15:04"),
 			Status:    status,
 		})
 	}

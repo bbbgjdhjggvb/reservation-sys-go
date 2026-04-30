@@ -383,3 +383,53 @@ func TestMergeContinuousSlots(t *testing.T) {
 		})
 	}
 }
+
+// ========== GetOccupiedSlots（返回格式验证） ==========
+
+func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := NewMockReservationRepository(ctrl)
+	svc := NewReservationService(mockRepo)
+
+	testDate := "2026-03-25"
+	mockSlots := []ReservationSlot{
+		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: StatusPending},
+		{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: StatusApproved},
+	}
+
+	mockRepo.EXPECT().
+		FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+		Return(mockSlots, nil)
+
+	result, err := svc.GetOccupiedSlots(testDate)
+	assert.NoError(t, err)
+	assert.Len(t, result, 2)
+
+	// 验证返回的是 string 类型时间，不是 time.Time 的 RFC3339 格式
+	t.Run("time_format", func(t *testing.T) {
+		for i, slot := range result {
+			assert.IsType(t, "", slot.StartTime, "slot[%d].StartTime 应为 string", i)
+			assert.IsType(t, "", slot.EndTime, "slot[%d].EndTime 应为 string", i)
+			// 应为 "2006-01-02 15:04" 格式（带空格分隔日期和时间）
+			assert.Contains(t, slot.StartTime, " ", "slot[%d].StartTIme 应包含空格分隔符", i)
+			assert.Contains(t, slot.EndTime, " ", "slot[%d].EndTIme 应包含空格分隔符", i)
+		}
+	})
+
+	t.Run("pending_status", func(t *testing.T) {
+		assert.Equal(t, "pending", result[0].Status, "待审核时段应返回 'pending'")
+	})
+
+	t.Run("approved_status", func(t *testing.T) {
+		assert.Equal(t, "approved", result[1].Status, "已通过时段应返回 'approved'")
+	})
+
+	t.Run("exact_time_values", func(t *testing.T) {
+		assert.Equal(t, "2026-03-25 08:00", result[0].StartTime)
+		assert.Equal(t, "2026-03-25 10:00", result[0].EndTime)
+		assert.Equal(t, "2026-03-25 13:00", result[1].StartTime)
+		assert.Equal(t, "2026-03-25 15:00", result[1].EndTime)
+	})
+}
