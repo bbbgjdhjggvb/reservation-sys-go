@@ -66,7 +66,6 @@ func main() {
 	r.Use(auth.CORSMiddleware(cfg.Server.CORSAllowOrigins))
 
 	// 静态资源和模板
-	r.Static("/static", "./internal/reservation/frontend/static")
 	r.LoadHTMLGlob("internal/reservation/frontend/*.html")
 
 	// 页面路由
@@ -77,6 +76,11 @@ func main() {
 	// 预约页面入口（从微信服务号重定向过来）
 	r.GET("/reserve", func(c *gin.Context) {
 		c.HTML(200, "index.html", nil)
+	})
+
+	// 我的预约页面入口（从微信服务号重定向过来）
+	r.GET("/myorders", func(c *gin.Context) {
+		c.HTML(200, "myorders.html", nil)
 	})
 
 	// API 路由
