@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "reservation-sys/api/gen/notification";
+
+// NotificationService 通知服务 - 由 v1 提供
+service NotificationService {
+  // 发送审核通过通知
+  rpc SendApprovalNotification(ApprovalNotificationReq) returns (NotificationResp);
+  // 发送审核驳回通知
+  rpc SendRejectionNotification(RejectionNotificationReq) returns (NotificationResp);
+}
+
+// 时段信息
+message SlotInfo {
+  string start_time = 1;
+  string end_time = 2;
+  string password = 3;
+}
+
+// 审核通过通知请求
+message ApprovalNotificationReq {
+  string openid = 1;
+  string applicant_name = 2;
+  string alumni_association = 3;
+  string order_no = 4;
+  repeated SlotInfo slots = 5;
+}
+
+// 审核驳回通知请求
+message RejectionNotificationReq {
+  string openid = 1;
+  string applicant_name = 2;
+  string alumni_association = 3;
+  string order_no = 4;
+  repeated SlotInfo slots = 5;
+  string reason = 6;
+}
+
+// 通知响应
+message NotificationResp {
+  bool success = 1;
+  string message = 2;
+}

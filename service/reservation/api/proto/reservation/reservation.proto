@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package reservation;
+
+option go_package = "reservation-sys/api/gen/reservation";
+
+// ReservationService 预约服务 - 由 v2 提供
+service ReservationService {
+  // 获取单个订单（含时段明细）
+  rpc GetOrder(GetOrderReq) returns (GetOrderResp);
+  // 分页查询订单列表
+  rpc ListOrders(ListOrdersReq) returns (ListOrdersResp);
+  // 审核更新订单状态（事务：订单+时段状态同步）
+  rpc UpdateOrderStatus(UpdateOrderStatusReq) returns (UpdateOrderStatusResp);
+  // 设置门锁密码
+  rpc SetSlotPassword(SetSlotPasswordReq) returns (SetSlotPasswordResp);
+}
+
+// ============ 请求/响应消息 ============
+
+message GetOrderReq {
+  uint32 order_id = 1;
+}
+
+message GetOrderResp {
+  OrderInfo order = 1;
+}
+
+message ListOrdersReq {
+  repeated int32 statuses = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListOrdersResp {
+  repeated OrderInfo orders = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message UpdateOrderStatusReq {
+  uint32 order_id = 1;
+  int32 from_status = 2;
+  int32 to_status = 3;
+}
+
+message UpdateOrderStatusResp {}
+
+message SetSlotPasswordReq {
+  uint32 slot_id = 1;
+  string password = 2;
+}
+
+message SetSlotPasswordResp {}
+
+// ============ 数据模型 ============
+
+// 订单信息
+message OrderInfo {
+  uint32 id = 1;
+  string order_no = 2;
+  string openid = 3;
+  string applicant_name = 4;
+  string alumni_association = 5;
+  int32 year = 6;
+  string major = 7;
+  string reason = 8;
+  string phone = 9;
+  int32 total_slots = 10;
+  int32 status = 11;
+  string created_at = 12;
+  repeated SlotInfo slots = 13;
+}
+
+// 时段信息
+message SlotInfo {
+  uint32 id = 1;
+  string start_time = 2;
+  string end_time = 3;
+  int32 status = 4;
+  string password = 5;
+}

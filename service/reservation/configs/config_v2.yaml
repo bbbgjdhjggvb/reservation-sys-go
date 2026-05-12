@@ -1,0 +1,22 @@
+# 预约服务配置 (v2) - 部署环境
+# 用途: 处理用户预约相关业务
+# 数据库: home_res（预约+审核数据库，与 admin 共享）
+
+server:
+  port: ":8081"
+  mode: "release"
+  cors_allow_origins:
+    - "https://reserve.example.com"
+
+mysql:
+  host: "mysql"
+  port: 3306
+  user: "res_user"
+  password: "xSIn34sU7qQl31kQ3TVfcQ=="
+  dbname: "home_res"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24

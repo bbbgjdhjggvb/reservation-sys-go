@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package account;
+
+option go_package = "reservation-sys/service/gateway/api/gen/account";
+
+// AccountService 账号验证服务 - 由 Gateway 提供
+// Admin 服务通过 gRPC 调用此服务验证管理员登录凭证
+service AccountService {
+  // 验证管理员登录凭证
+  rpc VerifyAdmin(VerifyAdminReq) returns (VerifyAdminResp);
+}
+
+// 验证管理员登录请求
+message VerifyAdminReq {
+  string username = 1;
+  string password = 2;
+}
+
+// 验证管理员登录响应
+message VerifyAdminResp {
+  bool success = 1;
+  uint32 admin_id = 2;
+  string username = 3;
+  string real_name = 4;
+  int32 role = 5;
+  string message = 6;
+}
