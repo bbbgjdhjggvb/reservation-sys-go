@@ -352,7 +352,7 @@ info:
   title: 深圳大学校友会会议室预约系统 API
   version: "1.0"
 paths:
-  /api/v1/auth/admin/info:
+  /api/gateway/auth/admin/info:
     get:
       description: 根据 JWT Token 返回当前登录管理员的详细信息
       produces:
@@ -376,7 +376,7 @@ paths:
       summary: 获取当前管理员信息（Gateway）
       tags:
       - 网关-管理员认证
-  /api/v1/auth/admin/login:
+  /api/gateway/auth/admin/login:
     post:
       consumes:
       - application/json
@@ -411,7 +411,7 @@ paths:
       summary: 管理员登录（Gateway）
       tags:
       - 网关-管理员认证
-  /api/v1/auth/callback:
+  /api/gateway/auth/callback:
     get:
       description: 微信服务号菜单点击后，微信服务器回调此接口，用 code 换取用户 openid，签发 JWT 后重定向到前端页面
       parameters:
@@ -446,7 +446,7 @@ paths:
       summary: 微信 OAuth 回调
       tags:
       - 网关-认证
-  /api/v2/reservation/{id}:
+  /api/reservation/reservation/{id}:
     delete:
       description: 用户取消自己的预约订单（仅待审核或已通过状态可取消），同时将关联时段标记为已取消
       parameters:
@@ -475,7 +475,7 @@ paths:
       summary: 取消预约
       tags:
       - 预约-用户端
-  /api/v2/reservation/my:
+  /api/reservation/reservation/my:
     get:
       description: 根据 JWT 中的 openid 查询当前用户的所有预约订单（按创建时间倒序）
       produces:
@@ -505,7 +505,7 @@ paths:
       summary: 获取我的预约列表
       tags:
       - 预约-用户端
-  /api/v2/reservation/occupied:
+  /api/reservation/reservation/occupied:
     get:
       description: 查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态
       parameters:
@@ -534,7 +534,7 @@ paths:
       summary: 获取已占用时段
       tags:
       - 预约-用户端
-  /api/v2/reservation/submit:
+  /api/reservation/reservation/submit:
     post:
       consumes:
       - application/json
@@ -571,7 +571,7 @@ paths:
       summary: 提交预约申请
       tags:
       - 预约-用户端
-  /api/v3/admin/info:
+  /api/admin/admin/info:
     get:
       description: 根据 JWT Token 返回当前登录管理员的 ID、用户名、角色等信息
       produces:
@@ -595,7 +595,7 @@ paths:
       summary: 获取当前管理员信息
       tags:
       - 管理员-认证
-  /api/v3/auth/login:
+  /api/admin/auth/login:
     post:
       consumes:
       - application/json
@@ -630,7 +630,7 @@ paths:
       summary: 管理员登录
       tags:
       - 管理员-认证
-  /api/v3/orders:
+  /api/admin/orders:
     get:
       description: 分页查询所有预约订单，支持按多个状态筛选（传多个 status 参数取并集），不传则查全部
       parameters:
@@ -681,7 +681,7 @@ paths:
       summary: 获取订单列表
       tags:
       - 管理员-审核
-  /api/v3/orders/{id}:
+  /api/admin/orders/{id}:
     get:
       description: 根据订单ID查询订单完整信息，包含关联时段和审核操作流水记录
       parameters:
@@ -718,7 +718,7 @@ paths:
       summary: 获取订单详情
       tags:
       - 管理员-审核
-  /api/v3/review/level1/{id}:
+  /api/admin/review/level1/{id}:
     post:
       consumes:
       - application/json
@@ -759,7 +759,7 @@ paths:
       summary: 一级审核
       tags:
       - 管理员-审核
-  /api/v3/review/level1/{id}/notify:
+  /api/admin/review/level1/{id}/notify:
     post:
       description: 一级管理员向终审通过且已设密码的订单用户发送微信模板消息通知
       parameters:
@@ -792,7 +792,7 @@ paths:
       summary: 发送审核通过通知
       tags:
       - 管理员-通知
-  /api/v3/review/level1/{id}/reject-notify:
+  /api/admin/review/level1/{id}/reject-notify:
     post:
       consumes:
       - application/json
@@ -833,7 +833,7 @@ paths:
       summary: 发送驳回通知
       tags:
       - 管理员-通知
-  /api/v3/review/level1/{id}/slots/{slotID}/password:
+  /api/admin/review/level1/{id}/slots/{slotID}/password:
     put:
       consumes:
       - application/json
@@ -875,7 +875,7 @@ paths:
       summary: 设置门锁密码
       tags:
       - 管理员-审核
-  /api/v3/review/level2/{id}:
+  /api/admin/review/level2/{id}:
     post:
       consumes:
       - application/json

@@ -81,10 +81,10 @@ review_records
 
 ## 前端-后端的请求响应
 
-所有接口路径前缀 `/api/v2`，需携带 Bearer token（用户 JWT）。
+所有接口路径前缀 `/api/reservation`，需携带 Bearer token（用户 JWT）。
 
 ### 提交预约
-1. 请求: POST /api/v2/reservation/submit
+1. 请求: POST /api/reservation/reservation/submit
 2. 请求头: Authorization: Bearer {token}
 3. 请求体:
 ```json
@@ -162,7 +162,7 @@ review_records
 ---
 
 ### 获取我的预约
-1. 请求: GET /api/v2/reservation/my
+1. 请求: GET /api/reservation/reservation/my
 2. 请求头: Authorization: Bearer {token}
 3. 请求体: 无
 4. 成功响应
@@ -208,7 +208,7 @@ review_records
 ---
 
 ### 获取已占用时段（日历展示）
-1. 请求: GET /api/v2/reservation/occupied?date=2026-05-06
+1. 请求: GET /api/reservation/reservation/occupied?date=2026-05-06
 2. 请求头: Authorization: Bearer {token}
 3. 查询参数: date（可选，格式 YYYY-MM-DD，默认当天）
 4. 成功响应
@@ -238,7 +238,7 @@ review_records
 ---
 
 ### 取消预约
-1. 请求: DELETE /api/v2/reservation/:id
+1. 请求: DELETE /api/reservation/reservation/:id
 2. 请求头: Authorization: Bearer {token}
 3. 路径参数: id（预约订单ID）
 4. 成功响应

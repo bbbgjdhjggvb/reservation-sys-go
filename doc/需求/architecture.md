@@ -102,9 +102,9 @@ graph TD
     User -->|HTTP 请求| Nginx
     Manager -->|HTTP 请求| Nginx
 
-    Nginx -->|/wx, /api/v1 路由| Gateway
-    Nginx -->|/reserve, /api/v2 路由| Reservation
-    Nginx -->|/admin, /api/v3 路由| Admin
+    Nginx -->|/wx, /api/gateway 路由| Gateway
+    Nginx -->|/reserve, /api/reservation 路由| Reservation
+    Nginx -->|/admin, /api/admin 路由| Admin
     Nginx -->|/static 路由| Nginx
 
     %% 微信服务器交互
@@ -133,7 +133,7 @@ graph TD
 ```
 微信用户点击服务号菜单
     → 微信服务器构造 OAuth 链接，用户授权
-    → 回调 GET /api/v1/auth/callback?code=xxx&state=xxx
+    → 回调 GET /api/gateway/auth/callback?code=xxx&state=xxx
     → Gateway 用 code 换 openid，签发用户 JWT
     → HTTP 302 重定向到 /reserve?token=<jwt>
     → Reservation 返回预约页面 HTML
@@ -147,16 +147,16 @@ graph TD
 
 ```
 管理员浏览器 → /admin → Admin 返回登录页面
-    → 输入账号密码 POST /api/v3/auth/login
+    → 输入账号密码 POST /api/admin/auth/login
     → Admin 通过 gRPC 调用 Gateway AccountService.VerifyAdmin
     → Gateway 查询 home_xy.admins 表验证
     → Admin 签发管理员 JWT 返回给浏览器
-    → 浏览器携带 Bearer token 请求 /api/v3/orders 等接口
+    → 浏览器携带 Bearer token 请求 /api/admin/orders 等接口
     → Admin AdminAuthMiddleware + RoleMiddleware 验证身份和权限
-    → 一级审核：POST /api/v3/review/level1/:id → 状态 5→6 或 5→7
-    → 二级审核：POST /api/v3/review/level2/:id → 状态 6→1 或 6→8
-    → 通过后设置密码：PUT /api/v3/review/level1/:id/slots/:slotID/password
-    → 发送通知：POST /api/v3/review/level1/:id/notify
+    → 一级审核：POST /api/admin/review/level1/:id → 状态 5→6 或 5→7
+    → 二级审核：POST /api/admin/review/level2/:id → 状态 6→1 或 6→8
+    → 通过后设置密码：PUT /api/admin/review/level1/:id/slots/:slotID/password
+    → 发送通知：POST /api/admin/review/level1/:id/notify
     → Admin 通过 gRPC 调用 Gateway NotificationService.SendApprovalNotification
     → Gateway 发送微信模板消息给用户
 ```

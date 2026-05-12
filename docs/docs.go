@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/auth/admin/info": {
+        "/api/gateway/auth/admin/info": {
             "get": {
                 "security": [
                     {
@@ -58,7 +58,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/admin/login": {
+        "/api/gateway/auth/admin/login": {
             "post": {
                 "description": "验证管理员用户名密码（直接查询数据库），签发 Admin JWT Token",
                 "consumes": [
@@ -116,7 +116,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/callback": {
+        "/api/gateway/auth/callback": {
             "get": {
                 "description": "微信服务号菜单点击后，微信服务器回调此接口，用 code 换取用户 openid，签发 JWT 后重定向到前端页面",
                 "produces": [
@@ -169,7 +169,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/my": {
+        "/api/reservation/reservation/my": {
             "get": {
                 "security": [
                     {
@@ -221,7 +221,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/occupied": {
+        "/api/reservation/reservation/occupied": {
             "get": {
                 "description": "查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态",
                 "produces": [
@@ -270,7 +270,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/submit": {
+        "/api/reservation/reservation/submit": {
             "post": {
                 "security": [
                     {
@@ -333,7 +333,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/reservation/{id}": {
+        "/api/reservation/reservation/{id}": {
             "delete": {
                 "security": [
                     {
@@ -379,7 +379,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/admin/info": {
+        "/api/admin/admin/info": {
             "get": {
                 "security": [
                     {
@@ -422,7 +422,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/auth/login": {
+        "/api/admin/auth/login": {
             "post": {
                 "description": "验证管理员用户名密码（通过 gRPC 调用 Gateway），返回 JWT Token 和管理员信息",
                 "consumes": [
@@ -480,7 +480,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/orders": {
+        "/api/admin/orders": {
             "get": {
                 "security": [
                     {
@@ -564,7 +564,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/orders/{id}": {
+        "/api/admin/orders/{id}": {
             "get": {
                 "security": [
                     {
@@ -627,7 +627,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/review/level1/{id}": {
+        "/api/admin/review/level1/{id}": {
             "post": {
                 "security": [
                     {
@@ -691,7 +691,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/review/level1/{id}/notify": {
+        "/api/admin/review/level1/{id}/notify": {
             "post": {
                 "security": [
                     {
@@ -743,7 +743,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/review/level1/{id}/reject-notify": {
+        "/api/admin/review/level1/{id}/reject-notify": {
             "post": {
                 "security": [
                     {
@@ -807,7 +807,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/review/level1/{id}/slots/{slotID}/password": {
+        "/api/admin/review/level1/{id}/slots/{slotID}/password": {
             "put": {
                 "security": [
                     {
@@ -872,7 +872,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v3/review/level2/{id}": {
+        "/api/admin/review/level2/{id}": {
             "post": {
                 "security": [
                     {

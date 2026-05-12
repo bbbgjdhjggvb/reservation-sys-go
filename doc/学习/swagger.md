@@ -114,7 +114,7 @@ flowchart TB
 // @Failure      400            {object}  Response                   "请求参数错误"
 // @Failure      401            {object}  Response                   "未授权"
 // @Security     BearerAuth
-// @Router       /api/v2/reservation/submit [post]
+// @Router       /api/reservation/reservation/submit [post]
 ```
 
 ### 注解逐行解释
@@ -130,7 +130,7 @@ flowchart TB
 | `@Success` | 200 {object} Response{data=OrderResp} | 成功响应 |
 | `@Failure` | 400 {object} Response | 错误响应 |
 | `@Security` | BearerAuth | 关联全局定义的鉴权机制 |
-| `@Router` | /api/v2/reservation/submit [post] | 路由路径和 HTTP 方法 |
+| `@Router` | /api/reservation/reservation/submit [post] | 路由路径和 HTTP 方法 |
 
 ### @Param 参数格式
 
@@ -214,42 +214,42 @@ type Response struct {
 
 | 方法 | 路径 | 说明 | 需认证 |
 |------|------|------|--------|
-| POST | `/api/v2/reservation/submit` | 提交预约申请 | ✅ |
-| GET | `/api/v2/reservation/my` | 获取我的预约列表 | ✅ |
-| GET | `/api/v2/reservation/occupied` | 获取已占用时段 | ❌ |
-| DELETE | `/api/v2/reservation/{id}` | 取消预约 | ✅ |
+| POST | `/api/reservation/reservation/submit` | 提交预约申请 | ✅ |
+| GET | `/api/reservation/reservation/my` | 获取我的预约列表 | ✅ |
+| GET | `/api/reservation/reservation/occupied` | 获取已占用时段 | ❌ |
+| DELETE | `/api/reservation/reservation/{id}` | 取消预约 | ✅ |
 
 ### 管理员-认证（admin/auth）
 
 | 方法 | 路径 | 说明 | 需认证 |
 |------|------|------|--------|
-| POST | `/api/v3/auth/login` | 管理员登录 | ❌ |
-| GET | `/api/v3/admin/info` | 获取当前管理员信息 | ✅ |
+| POST | `/api/admin/auth/login` | 管理员登录 | ❌ |
+| GET | `/api/admin/admin/info` | 获取当前管理员信息 | ✅ |
 
 ### 管理员-审核（admin/review）
 
 | 方法 | 路径 | 说明 | 需认证 |
 |------|------|------|--------|
-| GET | `/api/v3/orders` | 获取订单列表 | ✅ |
-| GET | `/api/v3/orders/{id}` | 获取订单详情 | ✅ |
-| POST | `/api/v3/review/level1/{id}` | 一级审核 | ✅ |
-| POST | `/api/v3/review/level2/{id}` | 二级审核 | ✅ |
-| PUT | `/api/v3/review/level1/{id}/slots/{slotID}/password` | 设置门锁密码 | ✅ |
+| GET | `/api/admin/orders` | 获取订单列表 | ✅ |
+| GET | `/api/admin/orders/{id}` | 获取订单详情 | ✅ |
+| POST | `/api/admin/review/level1/{id}` | 一级审核 | ✅ |
+| POST | `/api/admin/review/level2/{id}` | 二级审核 | ✅ |
+| PUT | `/api/admin/review/level1/{id}/slots/{slotID}/password` | 设置门锁密码 | ✅ |
 
 ### 管理员-通知（admin/review）
 
 | 方法 | 路径 | 说明 | 需认证 |
 |------|------|------|--------|
-| POST | `/api/v3/review/level1/{id}/notify` | 发送审核通过通知 | ✅ |
-| POST | `/api/v3/review/level1/{id}/reject-notify` | 发送驳回通知 | ✅ |
+| POST | `/api/admin/review/level1/{id}/notify` | 发送审核通过通知 | ✅ |
+| POST | `/api/admin/review/level1/{id}/reject-notify` | 发送驳回通知 | ✅ |
 
 ### 网关-认证（gateway/auth）
 
 | 方法 | 路径 | 说明 | 需认证 |
 |------|------|------|--------|
-| GET | `/api/v1/auth/callback` | 微信 OAuth 回调 | ❌ |
-| POST | `/api/v1/auth/admin/login` | 管理员登录（Gateway） | ❌ |
-| GET | `/api/v1/auth/admin/info` | 获取管理员信息（Gateway） | ✅ |
+| GET | `/api/gateway/auth/callback` | 微信 OAuth 回调 | ❌ |
+| POST | `/api/gateway/auth/admin/login` | 管理员登录（Gateway） | ❌ |
+| GET | `/api/gateway/auth/admin/info` | 获取管理员信息（Gateway） | ✅ |
 
 ---
 
@@ -297,7 +297,7 @@ go run service/swagger/cmd/main.go
 
 如管理员登录：
 
-1. 找到 **管理员-认证** 分组下的 `POST /api/v3/auth/login`
+1. 找到 **管理员-认证** 分组下的 `POST /api/admin/auth/login`
 2. 点击展开 → 点击 **Try it out**
 3. 在请求体中填写参数
 4. 点击 **Execute** 执行请求
@@ -357,7 +357,7 @@ flowchart LR
 | `@Success` | 成功响应 | `@Success 200 {object} Response` |
 | `@Failure` | 错误响应 | `@Failure 400 {object} Response` |
 | `@Security` | 关联鉴权 | `@Security BearerAuth` |
-| `@Router` | 路由和方法 | `@Router /api/v2/submit [post]` |
+| `@Router` | 路由和方法 | `@Router /api/reservation/submit [post]` |
 
 ### @Param 参数位置
 

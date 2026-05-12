@@ -27,7 +27,7 @@ flowchart LR
 import "net/http/httptest"
 
 // 1. 创建测试请求
-req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(jsonBody))
+req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(jsonBody))
 req.Header.Set("Content-Type", "application/json")
 req.Header.Set("Authorization", "Bearer "+token)
 
@@ -56,7 +56,7 @@ func setupReservationAPI(t *testing.T) (*gomock.Controller, *reservation.MockRes
     r := gin.New()
 
     // 需要认证的路由
-    api := r.Group("/api/v2")
+    api := r.Group("/api/reservation")
     api.Use(middleware.AuthMiddleware())          // ← JWT 中间件
     {
         api.POST("/reservation/submit", hdl.SubmitHandler)
@@ -65,7 +65,7 @@ func setupReservationAPI(t *testing.T) (*gomock.Controller, *reservation.MockRes
     }
 
     // 不需要认证的路由
-    r.GET("/api/v2/reservation/occupied", hdl.GetOccupiedSlots)
+    r.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
     return ctrl, mockRepo, r
 }
@@ -139,7 +139,7 @@ func TestReservationAPI_Submit(t *testing.T) {
         mockRepo.EXPECT().FindOrderByID(uint(1)).Return(&reservationdb.ReservationOrder{...}, nil)
 
         // 发送请求
-        req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(body))
+        req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(body))
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", "Bearer "+token)
         w := httptest.NewRecorder()
@@ -180,11 +180,11 @@ func setupAdminAPI(t *testing.T) (*gomock.Controller, *MockAccountServiceClient,
     r := gin.New()
 
     // 认证路由（无需 token）
-    authGroup := r.Group("/api/v3/auth")
+    authGroup := r.Group("/api/admin/auth")
     authGroup.POST("/login", authHdl.LoginHandler)
 
     // 需认证路由
-    api := r.Group("/api/v3")
+    api := r.Group("/api/admin")
     api.Use(adminauth.AdminAuthMiddleware())     // ← 第一层：JWT 认证
     {
         api.GET("/orders", reviewHdl.GetOrderListHandler)
@@ -223,7 +223,7 @@ func TestAdminAPI_Level1Review(t *testing.T) {
         mockRepo.EXPECT().UpdateOrderStatus(uint(1), ...).Return(nil)
         mockRepo.EXPECT().CreateReviewRecord(gomock.Any()).Return(nil)
 
-        req := httptest.NewRequest("POST", "/api/v3/review/level1/1",
+        req := httptest.NewRequest("POST", "/api/admin/review/level1/1",
             strings.NewReader(`{"action":1,"comment":"通过"}`))
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", "Bearer "+token)
@@ -237,7 +237,7 @@ func TestAdminAPI_Level1Review(t *testing.T) {
         // 用二级管理员的 token 访问一级管理员接口
         token2 := generateAdminToken(t, 2, "admin2", constants.RoleLevel2)
 
-        req := httptest.NewRequest("POST", "/api/v3/review/level1/1",
+        req := httptest.NewRequest("POST", "/api/admin/review/level1/1",
             strings.NewReader(`{"action":1}`))
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", "Bearer "+token2)

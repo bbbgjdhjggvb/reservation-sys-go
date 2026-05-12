@@ -117,10 +117,10 @@ review_records（位于 `home_res`）
 
 # API 设计
 
-所有接口路径前缀 `/api/v3`，除登录外均需携带 Bearer token（管理员 JWT）。
+所有接口路径前缀 `/api/admin`，除登录外均需携带 Bearer token（管理员 JWT）。
 
 ## 管理员登录
-1. 请求: POST /api/v3/auth/login
+1. 请求: POST /api/admin/auth/login
 2. 请求体:
 ```json
 {
@@ -155,7 +155,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 获取当前管理员信息
-1. 请求: GET /api/v3/admin/info
+1. 请求: GET /api/admin/admin/info
 2. 请求头: Authorization: Bearer {token}
 3. 成功响应
 ```json
@@ -181,7 +181,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 获取预约订单列表（分页）
-1. 请求: GET /api/v3/orders?page=1&page_size=20&status=5&status=6
+1. 请求: GET /api/admin/orders?page=1&page_size=20&status=5&status=6
 2. 请求头: Authorization: Bearer {token}
 3. 查询参数:
     - page: 页码，默认 1
@@ -237,7 +237,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 获取订单详情（含审核记录）
-1. 请求: GET /api/v3/orders/:id
+1. 请求: GET /api/admin/orders/:id
 2. 请求头: Authorization: Bearer {token}
 3. 成功响应
 ```json
@@ -296,7 +296,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 一级审核
-1. 请求: POST /api/v3/review/level1/:id
+1. 请求: POST /api/admin/review/level1/:id
 2. 请求头: Authorization: Bearer {token}（需要一级管理员角色）
 3. 请求体:
 ```json
@@ -337,7 +337,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 二级审核
-1. 请求: POST /api/v3/review/level2/:id
+1. 请求: POST /api/admin/review/level2/:id
 2. 请求头: Authorization: Bearer {token}（需要二级管理员角色）
 3. 请求体:
 ```json
@@ -378,7 +378,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 设置门锁密码
-1. 请求: PUT /api/v3/review/level1/:id/slots/:slotID/password
+1. 请求: PUT /api/admin/review/level1/:id/slots/:slotID/password
 2. 请求头: Authorization: Bearer {token}（需要一级管理员角色）
 3. 请求体:
 ```json
@@ -413,7 +413,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 发送审核通过通知
-1. 请求: POST /api/v3/review/level1/:id/notify
+1. 请求: POST /api/admin/review/level1/:id/notify
 2. 请求头: Authorization: Bearer {token}（需要一级管理员角色）
 3. 请求体: 无
 4. 成功响应
@@ -443,7 +443,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 发送审核驳回通知
-1. 请求: POST /api/v3/review/level1/:id/reject-notify
+1. 请求: POST /api/admin/review/level1/:id/reject-notify
 2. 请求头: Authorization: Bearer {token}（需要一级管理员角色）
 3. 请求体:
 ```json
@@ -470,7 +470,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 1级管理员账号注册（规划中）
-1. 请求: POST /api/v3/auth/register
+1. 请求: POST /api/admin/auth/register
 2. 请求体:
 ```json
 {
@@ -505,7 +505,7 @@ review_records（位于 `home_res`）
 ---
 
 ## 获取1级管理员列表（规划中）
-1. 请求: GET /api/v3/admin/admins?page=1&page_size=20&status=active&status=lock
+1. 请求: GET /api/admin/admin/admins?page=1&page_size=20&status=active&status=lock
 2. 成功响应:
 ```json
 {
@@ -527,8 +527,8 @@ review_records（位于 `home_res`）
 ```
 
 ## 冻结/解冻1级管理员账号（规划中）
-1. 冻结: POST /api/v3/admin/admins/:id/freeze
-2. 解冻: POST /api/v3/admin/admins/:id/unfreeze
+1. 冻结: POST /api/admin/admin/admins/:id/freeze
+2. 解冻: POST /api/admin/admin/admins/:id/unfreeze
 
 ---
 

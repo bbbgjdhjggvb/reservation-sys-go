@@ -75,7 +75,7 @@ https://open.weixin.qq.com/connect/oauth2/authorize?appid=APPID&redirect_uri=RED
 
 **回调处理流程：**
 
-1. 请求: GET /api/v1/auth/callback?code=CODE&state=STATE
+1. 请求: GET /api/gateway/auth/callback?code=CODE&state=STATE
 2. Gateway 处理步骤：
     a. 提取 code 参数
     b. 调用微信 API 用 code 换取 openid（通过 `sns/oauth2/access_token` 接口）
@@ -275,7 +275,7 @@ Gateway 本身不提供前端页面。OAuth 回调完成后，Gateway 通过 HTT
 
 ### 微信 OAuth 回调域名限制
 微信要求回调域名必须与配置的网页授权域名一致，且只能配置一个域名。
-- **解决**: 生产环境统一使用 Nginx 反向代理后的域名 `http://domain/api/v1/auth/callback`，由 Nginx 将请求转发到 Gateway 服务。
+- **解决**: 生产环境统一使用 Nginx 反向代理后的域名 `http://domain/api/gateway/auth/callback`，由 Nginx 将请求转发到 Gateway 服务。
 
 ### state 参数的安全使用
 OAuth 的 state 参数用于防止 CSRF 攻击和区分跳转来源。
