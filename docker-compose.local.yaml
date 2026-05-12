@@ -1,12 +1,16 @@
 # 本地开发 Docker Compose 配置
 # 使用方法: docker-compose -f docker-compose.local.yaml up --build
+#
+# 架构说明:
+#   - Gateway: 管理账号数据库(home_xy)，提供 gRPC 通知+账号验证服务
+#   - Reservation: 面向用户的预约 HTTP 服务，使用共享预约数据库(home_res)
+#   - Admin: 管理员审核 HTTP 服务，使用共享预约数据库(home_res)，通过 gRPC 调用 Gateway
 
 version: "3.8"
 
 services:
   # ============ 基础设施 ============
 
-  # MySQL 数据库
   mysql:
     image: mysql:8.0
     container_name: reservation-mysql
@@ -20,7 +24,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro # 只能在本地编写
+      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-connect='SET NAMES utf8mb4'
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -30,7 +34,6 @@ services:
     networks:
       - reservation-net
 
-  # Redis 缓存
   redis:
     image: redis:7-alpine
     container_name: reservation-redis
@@ -49,12 +52,13 @@ services:
 
   # ============ 应用服务 ============
 
-  # v1 - 微信服务
-  v1-service:
+  # Gateway - 微信服务 + gRPC 服务（通知 + 账号验证）
+  # 数据库: home_xy（users, admins）
+  gateway:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: reservation-v1
+      dockerfile: service/gateway/Dockerfile
+    container_name: reservation-gateway
     restart: unless-stopped
     depends_on:
       mysql:
@@ -63,53 +67,54 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v1.local.yaml
+      - CONFIG_PATH=service/gateway/configs/config_v1.local.yaml
     volumes:
-      - ./configs:/app/configs:ro
-    command: ["/app/v1"]
+      - ./service/gateway/configs:/app/service/gateway/configs:ro
     networks:
       - reservation-net
 
-  # v2 - 预约服务
-  v2-service:
+  # Reservation - 预约服务（HTTP only，无 gRPC）
+  # 数据库: home_res（reservation_orders, reservation_slots, review_records）
+  reservation:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: reservation-v2
+      dockerfile: service/reservation/Dockerfile
+    container_name: reservation-reservation
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v2.local.yaml
+      - CONFIG_PATH=service/reservation/configs/config_v2.local.yaml
     volumes:
-      - ./configs:/app/configs:ro
-      - ./internal/reservation/frontend:/app/internal/reservation/frontend:ro
-    command: ["/app/v2"]
+      - ./service/reservation/configs:/app/service/reservation/configs:ro
+      - ./service/reservation/frontend:/app/service/reservation/frontend:ro
     networks:
       - reservation-net
 
-  # v3 - 管理员审核服务
-  # v3-service:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: reservation-v3
-  #   restart: unless-stopped
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   environment:
-  #     - TZ=Asia/Shanghai
-  #     - CONFIG_PATH=configs/config_v3.local.yaml
-  #   volumes:
-  #     - ./configs:/app/configs:ro
-  #   command: ["/app/v3"]
-  #   networks:
-  #     - reservation-net
+  # Admin - 管理员审核服务（HTTP + gRPC Client）
+  # 数据库: home_res（通过 pkg/reservationdb 共享）
+  # gRPC: 仅调用 Gateway（通知 + 账号验证）
+  admin:
+    build:
+      context: .
+      dockerfile: service/admin/Dockerfile
+    container_name: reservation-admin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      gateway:
+        condition: service_started
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=service/admin/configs/config_v3.yaml
+    volumes:
+      - ./service/admin/configs:/app/service/admin/configs:ro
+      - ./service/admin/frontend:/app/service/admin/frontend:ro
+    networks:
+      - reservation-net
 
   # Nginx 反向代理
   nginx:
@@ -117,9 +122,9 @@ services:
     container_name: reservation-nginx
     restart: unless-stopped
     depends_on:
-      - v1-service
-      - v2-service
-      # - v3-service
+      - gateway
+      - reservation
+      - admin
     ports:
       - "80:80"
     volumes:

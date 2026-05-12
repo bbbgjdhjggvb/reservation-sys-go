@@ -6,16 +6,12 @@ version: "3.8"
 services:
   # ============ 基础设施 ============
 
-  # MySQL 数据库
   mysql:
     image: mysql:8.0
     container_name: reservation-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
-      MYSQL_DATABASE: home_xy
-      MYSQL_USER: res_user
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-12345678}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -28,7 +24,6 @@ services:
     networks:
       - reservation-net
 
-  # Redis 缓存
   redis:
     image: redis:7-alpine
     container_name: reservation-redis
@@ -45,10 +40,9 @@ services:
 
   # ============ 应用服务 ============
 
-  # v1 - 微信服务
-  v1-service:
-    image: ${DOCKER_IMAGE:-reservation-sys:latest}
-    container_name: reservation-v1
+  gateway:
+    image: ${GATEWAY_IMAGE:-reservation-gateway:latest}
+    container_name: reservation-gateway
     restart: unless-stopped
     depends_on:
       mysql:
@@ -57,23 +51,33 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v1.yaml
-    command: ["/app/v1"]
+      - CONFIG_PATH=service/gateway/configs/config_v1.yaml
     networks:
       - reservation-net
 
-  # v2 - 预约服务
-  v2-service:
-    image: ${DOCKER_IMAGE:-reservation-sys:latest}
-    container_name: reservation-v2
+  reservation:
+    image: ${RESERVATION_IMAGE:-reservation-reservation:latest}
+    container_name: reservation-reservation
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=configs/config_v2.yaml
-    command: ["/app/v2"]
+      - CONFIG_PATH=service/reservation/configs/config_v2.yaml
+    networks:
+      - reservation-net
+
+  admin:
+    image: ${ADMIN_IMAGE:-reservation-admin:latest}
+    container_name: reservation-admin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=service/admin/configs/config_v3.yaml
     networks:
       - reservation-net
 
@@ -83,15 +87,16 @@ services:
     container_name: reservation-nginx
     restart: unless-stopped
     depends_on:
-      - v1-service
-      - v2-service
+      - gateway
+      - reservation
+      - admin
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
-      - ./internal/reservation/frontend/static/:/usr/share/nginx/html/static/:ro
-      - ./deploy/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
+      - ./service/reservation/frontend/static/:/usr/share/nginx/html/static/:ro
+      - ./deploy/ssl:/etc/nginx/ssl:ro
     networks:
       - reservation-net
 
