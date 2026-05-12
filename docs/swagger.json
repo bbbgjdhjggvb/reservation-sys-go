@@ -1,55 +1,42 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "校友场地预约系统的后端API服务",
-        "title": "预约系统 API",
+        "description": "包含用户端预约、管理员审核、微信网关认证三个子系统的接口文档",
+        "title": "深圳大学校友会会议室预约系统 API",
         "contact": {},
-        "version": "2.0"
+        "version": "1.0"
     },
-    "host": "localhost:8081",
-    "basePath": "/api/v2",
+    "host": "localhost:8083",
+    "basePath": "/",
     "paths": {
-        "/reservation/my": {
+        "/api/v1/auth/admin/info": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取当前登录用户的所有预约订单（包含各时段明细），需要JWT认证",
+                "description": "根据 JWT Token 返回当前登录管理员的详细信息",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "预约管理"
+                    "网关-管理员认证"
                 ],
-                "summary": "获取我的预约列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "Bearer",
-                        "description": "Bearer JWT令牌",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
+                "summary": "获取当前管理员信息（Gateway）",
                 "responses": {
                     "200": {
-                        "description": "查询成功",
+                        "description": "管理员信息",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_reservation.Response"
+                                    "$ref": "#/definitions/service_gateway_auth.AdminResp"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_reservation.OrderResp"
-                                            }
+                                            "$ref": "#/definitions/service_gateway_auth.AdminInfoResp"
                                         }
                                     }
                                 }
@@ -57,91 +44,17 @@
                         }
                     },
                     "401": {
-                        "description": "未授权",
+                        "description": "未登录",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_gateway_auth.AdminResp"
                         }
                     }
                 }
             }
         },
-        "/reservation/occupied": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "查询指定日期已被预约占用的时间段，需要JWT认证",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "预约管理"
-                ],
-                "summary": "获取已占用时间段",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "Bearer",
-                        "description": "Bearer JWT令牌",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "2026-01-01",
-                        "description": "查询日期(格式: 2026-01-01)",
-                        "name": "date",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "查询成功",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/internal_reservation.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/internal_reservation.TimeSlotResp"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/reservation/submit": {
+        "/api/v1/auth/admin/login": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "用户提交场地预约申请，支持一次提交1~4个时间段，需要JWT认证",
+                "description": "验证管理员用户名密码（直接查询数据库），签发 Admin JWT Token",
                 "consumes": [
                     "application/json"
                 ],
@@ -149,41 +62,33 @@
                     "application/json"
                 ],
                 "tags": [
-                    "预约管理"
+                    "网关-管理员认证"
                 ],
-                "summary": "提交预约申请（支持多时段）",
+                "summary": "管理员登录（Gateway）",
                 "parameters": [
                     {
-                        "type": "string",
-                        "default": "Bearer",
-                        "description": "Bearer JWT令牌",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "预约提交请求（含多个时间段）",
+                        "description": "管理员登录凭证",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.SubmitReq"
+                            "$ref": "#/definitions/service_gateway_auth.LoginReq"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "预约申请提交成功",
+                        "description": "登录成功",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_reservation.Response"
+                                    "$ref": "#/definitions/service_gateway_auth.AdminResp"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_reservation.OrderResp"
+                                            "$ref": "#/definitions/service_gateway_auth.LoginResp"
                                         }
                                     }
                                 }
@@ -191,47 +96,255 @@
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_gateway_auth.AdminResp"
                         }
                     },
                     "401": {
-                        "description": "未授权",
+                        "description": "凭证错误",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_gateway_auth.AdminResp"
                         }
                     }
                 }
             }
         },
-        "/reservation/{id}": {
+        "/api/v1/auth/callback": {
+            "get": {
+                "description": "微信服务号菜单点击后，微信服务器回调此接口，用 code 换取用户 openid，签发 JWT 后重定向到前端页面",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网关-认证"
+                ],
+                "summary": "微信 OAuth 回调",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "微信授权临时票据 code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "重定向目标标识（映射到预设的页面URL）",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "重定向到前端页面（URL 带 token 参数）",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "缺少 code 参数",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "description": "微信授权失效",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Token 生成失败",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/reservation/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据 JWT 中的 openid 查询当前用户的所有预约订单（按创建时间倒序）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预约-用户端"
+                ],
+                "summary": "获取我的预约列表",
+                "responses": {
+                    "200": {
+                        "description": "预约列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_reservation.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/service_reservation.OrderResp"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "查询失败",
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/reservation/occupied": {
+            "get": {
+                "description": "查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预约-用户端"
+                ],
+                "summary": "获取已占用时段",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "日期，格式 2006-01-02，默认当天",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "已占用时段列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_reservation.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/service_reservation.TimeSlotResp"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "日期格式错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/reservation/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "用户提交预约申请，包含申请人信息和时段列表（1~4个时段），同一天连续时段自动合并",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预约-用户端"
+                ],
+                "summary": "提交预约申请",
+                "parameters": [
+                    {
+                        "description": "预约申请信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.SubmitReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "预约提交成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_reservation.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service_reservation.OrderResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误/时段冲突",
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/reservation/{id}": {
             "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "取消指定的预约订单（取消所有关联的时段），仅预约人本人可操作，需要JWT认证",
+                "description": "用户取消自己的预约订单（仅待审核或已通过状态可取消），同时将关联时段标记为已取消",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "预约管理"
+                    "预约-用户端"
                 ],
                 "summary": "取消预约",
                 "parameters": [
                     {
-                        "type": "string",
-                        "default": "Bearer",
-                        "description": "Bearer JWT令牌",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
                         "type": "integer",
-                        "example": 1,
                         "description": "订单ID",
                         "name": "id",
                         "in": "path",
@@ -242,19 +355,576 @@
                     "200": {
                         "description": "取消成功",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_reservation.Response"
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "订单不存在/状态不允许取消",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_reservation.Response"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservation.Response"
+                            "$ref": "#/definitions/service_reservation.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/admin/info": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据 JWT Token 返回当前登录管理员的 ID、用户名、角色等信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-认证"
+                ],
+                "summary": "获取当前管理员信息",
+                "responses": {
+                    "200": {
+                        "description": "管理员信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_admin_auth.AdminResp"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service_admin_auth.AdminInfoResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/auth/login": {
+            "post": {
+                "description": "验证管理员用户名密码（通过 gRPC 调用 Gateway），返回 JWT Token 和管理员信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-认证"
+                ],
+                "summary": "管理员登录",
+                "parameters": [
+                    {
+                        "description": "管理员登录凭证",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.LoginReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "登录成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_admin_auth.AdminResp"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service_admin_auth.LoginResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "401": {
+                        "description": "凭证错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "分页查询所有预约订单，支持按多个状态筛选（传多个 status 参数取并集），不传则查全部",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-审核"
+                ],
+                "summary": "获取订单列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，默认1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页条数，默认20，最大50",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "状态筛选（可传多个），不传则查全部",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "订单列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_admin_review.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "list": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/service_admin_review.OrderResp"
+                                                    }
+                                                },
+                                                "page": {
+                                                    "type": "integer"
+                                                },
+                                                "page_size": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "查询失败",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据订单ID查询订单完整信息，包含关联时段和审核操作流水记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-审核"
+                ],
+                "summary": "获取订单详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "订单详情",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/service_admin_review.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "order": {
+                                                    "$ref": "#/definitions/service_admin_review.OrderResp"
+                                                },
+                                                "review_records": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/service_admin_review.ReviewRecordResp"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "订单不存在",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/review/level1/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "一级管理员对订单进行审核（通过→待二级审核，拒绝→一级驳回），使用乐观锁防止并发冲突",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-审核"
+                ],
+                "summary": "一级审核",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "审核操作（action: 1=通过, 2=拒绝）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.ReviewActionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "审核成功",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "参数/状态错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "权限不足（非一级管理员）",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/review/level1/{id}/notify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "一级管理员向终审通过且已设密码的订单用户发送微信模板消息通知",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-通知"
+                ],
+                "summary": "发送审核通过通知",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "通知发送成功",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "400": {
+                        "description": "订单不存在/状态不允许/未设密码",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "403": {
+                        "description": "权限不足",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/review/level1/{id}/reject-notify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "一级管理员向被驳回订单的用户发送微信模板消息，需附带驳回原因",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-通知"
+                ],
+                "summary": "发送驳回通知",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "驳回原因",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.RejectionNotifyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "驳回通知发送成功",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "400": {
+                        "description": "订单不存在/状态不允许",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    },
+                    "403": {
+                        "description": "权限不足",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_auth.AdminResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/review/level1/{id}/slots/{slotID}/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "一级管理员为终审通过的订单中指定时段设置门锁密码（最大20字符）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-审核"
+                ],
+                "summary": "设置门锁密码",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "时段ID",
+                        "name": "slotID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "门锁密码",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.SetPasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置成功",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "参数/状态错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v3/review/level2/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "二级管理员对已通过一级审核的订单进行终审（通过→终审通过，拒绝→二级驳回），使用乐观锁防止并发冲突",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "管理员-审核"
+                ],
+                "summary": "二级审核",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "审核操作（action: 1=通过, 2=拒绝）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.ReviewActionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "审核成功",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "参数/状态错误",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "权限不足（非二级管理员）",
+                        "schema": {
+                            "$ref": "#/definitions/service_admin_review.Response"
                         }
                     }
                 }
@@ -262,7 +932,318 @@
         }
     },
     "definitions": {
-        "internal_reservation.OrderResp": {
+        "service_admin_auth.AdminInfoResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "last_login": {
+                    "type": "string"
+                },
+                "real_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "integer"
+                },
+                "role_text": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_admin_auth.AdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {},
+                "msg": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "service_admin_auth.LoginReq": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin1"
+                }
+            }
+        },
+        "service_admin_auth.LoginResp": {
+            "type": "object",
+            "properties": {
+                "real_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "integer"
+                },
+                "role_text": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_admin_review.OrderResp": {
+            "type": "object",
+            "properties": {
+                "alumni_association": {
+                    "type": "string"
+                },
+                "applicant_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "major": {
+                    "type": "string"
+                },
+                "openid": {
+                    "type": "string"
+                },
+                "order_no": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "slots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service_admin_review.SlotResp"
+                    }
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "status_text": {
+                    "type": "string"
+                },
+                "total_slots": {
+                    "type": "integer"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service_admin_review.RejectionNotifyReq": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "description": "驳回原因",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "场地已被占用"
+                }
+            }
+        },
+        "service_admin_review.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {},
+                "msg": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "service_admin_review.ReviewActionReq": {
+            "type": "object",
+            "required": [
+                "action"
+            ],
+            "properties": {
+                "action": {
+                    "description": "1:通过, 2:拒绝",
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
+                },
+                "comment": {
+                    "description": "审核意见",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "审核通过"
+                }
+            }
+        },
+        "service_admin_review.ReviewRecordResp": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "integer"
+                },
+                "action_text": {
+                    "type": "string"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "reviewer_name": {
+                    "type": "string"
+                },
+                "reviewer_role": {
+                    "type": "integer"
+                },
+                "role_text": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_admin_review.SetPasswordReq": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "description": "门锁密码",
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "123456"
+                }
+            }
+        },
+        "service_admin_review.SlotResp": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "status_text": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_gateway_auth.AdminInfoResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "last_login": {
+                    "type": "string"
+                },
+                "real_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "integer"
+                },
+                "role_text": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_gateway_auth.AdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {},
+                "msg": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "service_gateway_auth.LoginReq": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin1"
+                }
+            }
+        },
+        "service_gateway_auth.LoginResp": {
+            "type": "object",
+            "properties": {
+                "real_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "integer"
+                },
+                "role_text": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service_reservation.OrderResp": {
             "type": "object",
             "properties": {
                 "alumni_association": {
@@ -298,10 +1279,9 @@
                     "example": "智慧城市讲座"
                 },
                 "slots": {
-                    "description": "时段明细列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_reservation.SlotResp"
+                        "$ref": "#/definitions/service_reservation.SlotResp"
                     }
                 },
                 "status": {
@@ -322,7 +1302,7 @@
                 }
             }
         },
-        "internal_reservation.Response": {
+        "service_reservation.Response": {
             "type": "object",
             "properties": {
                 "code": {
@@ -336,7 +1316,7 @@
                 }
             }
         },
-        "internal_reservation.SlotResp": {
+        "service_reservation.SlotResp": {
             "type": "object",
             "properties": {
                 "end_time": {
@@ -346,6 +1326,10 @@
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "password": {
+                    "type": "string",
+                    "example": "123456"
                 },
                 "start_time": {
                     "type": "string",
@@ -361,7 +1345,7 @@
                 }
             }
         },
-        "internal_reservation.SubmitReq": {
+        "service_reservation.SubmitReq": {
             "type": "object",
             "required": [
                 "alumni_association",
@@ -395,12 +1379,11 @@
                     "example": "智慧城市讲座"
                 },
                 "slots": {
-                    "description": "预约时间段列表（1~4个）",
                     "type": "array",
                     "maxItems": 4,
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/internal_reservation.TimeSlotReq"
+                        "$ref": "#/definitions/service_reservation.TimeSlotReq"
                     }
                 },
                 "year": {
@@ -409,7 +1392,7 @@
                 }
             }
         },
-        "internal_reservation.TimeSlotReq": {
+        "service_reservation.TimeSlotReq": {
             "type": "object",
             "required": [
                 "end_time",
@@ -417,18 +1400,16 @@
             ],
             "properties": {
                 "end_time": {
-                    "description": "结束时间",
                     "type": "string",
                     "example": "2026-01-01 10:00:00"
                 },
                 "start_time": {
-                    "description": "开始时间",
                     "type": "string",
                     "example": "2026-01-01 08:00:00"
                 }
             }
         },
-        "internal_reservation.TimeSlotResp": {
+        "service_reservation.TimeSlotResp": {
             "type": "object",
             "properties": {
                 "end_time": {
@@ -440,7 +1421,6 @@
                     "example": "2026-01-01 09:00"
                 },
                 "status": {
-                    "description": "pending待审核 / approved已通过",
                     "type": "string",
                     "example": "pending"
                 }
@@ -449,7 +1429,7 @@
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "JWT Bearer令牌认证，格式: Bearer token",
+            "description": "在请求头中添加 Authorization: Bearer \u003ctoken\u003e，用户端和管理员端使用不同的 JWT",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

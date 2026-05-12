@@ -1,6 +1,217 @@
-basePath: /api/v2
+basePath: /
 definitions:
-  internal_reservation.OrderResp:
+  service_admin_auth.AdminInfoResp:
+    properties:
+      id:
+        type: integer
+      last_login:
+        type: string
+      real_name:
+        type: string
+      role:
+        type: integer
+      role_text:
+        type: string
+      username:
+        type: string
+    type: object
+  service_admin_auth.AdminResp:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      msg:
+        example: success
+        type: string
+    type: object
+  service_admin_auth.LoginReq:
+    properties:
+      password:
+        example: "123456"
+        type: string
+      username:
+        example: admin1
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  service_admin_auth.LoginResp:
+    properties:
+      real_name:
+        type: string
+      role:
+        type: integer
+      role_text:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  service_admin_review.OrderResp:
+    properties:
+      alumni_association:
+        type: string
+      applicant_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      major:
+        type: string
+      openid:
+        type: string
+      order_no:
+        type: string
+      phone:
+        type: string
+      reason:
+        type: string
+      slots:
+        items:
+          $ref: '#/definitions/service_admin_review.SlotResp'
+        type: array
+      status:
+        type: integer
+      status_text:
+        type: string
+      total_slots:
+        type: integer
+      year:
+        type: integer
+    type: object
+  service_admin_review.RejectionNotifyReq:
+    properties:
+      reason:
+        description: 驳回原因
+        example: 场地已被占用
+        maxLength: 500
+        type: string
+    type: object
+  service_admin_review.Response:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      msg:
+        example: success
+        type: string
+    type: object
+  service_admin_review.ReviewActionReq:
+    properties:
+      action:
+        description: 1:通过, 2:拒绝
+        enum:
+        - 1
+        - 2
+        type: integer
+      comment:
+        description: 审核意见
+        example: 审核通过
+        maxLength: 500
+        type: string
+    required:
+    - action
+    type: object
+  service_admin_review.ReviewRecordResp:
+    properties:
+      action:
+        type: integer
+      action_text:
+        type: string
+      comment:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      reviewer_name:
+        type: string
+      reviewer_role:
+        type: integer
+      role_text:
+        type: string
+    type: object
+  service_admin_review.SetPasswordReq:
+    properties:
+      password:
+        description: 门锁密码
+        example: "123456"
+        maxLength: 20
+        type: string
+    required:
+    - password
+    type: object
+  service_admin_review.SlotResp:
+    properties:
+      end_time:
+        type: string
+      id:
+        type: integer
+      password:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: integer
+      status_text:
+        type: string
+    type: object
+  service_gateway_auth.AdminInfoResp:
+    properties:
+      id:
+        type: integer
+      last_login:
+        type: string
+      real_name:
+        type: string
+      role:
+        type: integer
+      role_text:
+        type: string
+      username:
+        type: string
+    type: object
+  service_gateway_auth.AdminResp:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      msg:
+        example: success
+        type: string
+    type: object
+  service_gateway_auth.LoginReq:
+    properties:
+      password:
+        example: "123456"
+        type: string
+      username:
+        example: admin1
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  service_gateway_auth.LoginResp:
+    properties:
+      real_name:
+        type: string
+      role:
+        type: integer
+      role_text:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  service_reservation.OrderResp:
     properties:
       alumni_association:
         example: 土木与交通工程学院校友会
@@ -27,9 +238,8 @@ definitions:
         example: 智慧城市讲座
         type: string
       slots:
-        description: 时段明细列表
         items:
-          $ref: '#/definitions/internal_reservation.SlotResp'
+          $ref: '#/definitions/service_reservation.SlotResp'
         type: array
       status:
         example: 0
@@ -44,7 +254,7 @@ definitions:
         example: 2000
         type: integer
     type: object
-  internal_reservation.Response:
+  service_reservation.Response:
     properties:
       code:
         example: 200
@@ -54,7 +264,7 @@ definitions:
         example: success
         type: string
     type: object
-  internal_reservation.SlotResp:
+  service_reservation.SlotResp:
     properties:
       end_time:
         example: 2026-01-01 10:00
@@ -62,6 +272,9 @@ definitions:
       id:
         example: 1
         type: integer
+      password:
+        example: "123456"
+        type: string
       start_time:
         example: 2026-01-01 08:00
         type: string
@@ -72,7 +285,7 @@ definitions:
         example: 待审核
         type: string
     type: object
-  internal_reservation.SubmitReq:
+  service_reservation.SubmitReq:
     properties:
       alumni_association:
         example: 土木与交通工程学院校友会
@@ -91,9 +304,8 @@ definitions:
         maxLength: 500
         type: string
       slots:
-        description: 预约时间段列表（1~4个）
         items:
-          $ref: '#/definitions/internal_reservation.TimeSlotReq'
+          $ref: '#/definitions/service_reservation.TimeSlotReq'
         maxItems: 4
         minItems: 1
         type: array
@@ -109,21 +321,19 @@ definitions:
     - slots
     - year
     type: object
-  internal_reservation.TimeSlotReq:
+  service_reservation.TimeSlotReq:
     properties:
       end_time:
-        description: 结束时间
         example: "2026-01-01 10:00:00"
         type: string
       start_time:
-        description: 开始时间
         example: "2026-01-01 08:00:00"
         type: string
     required:
     - end_time
     - start_time
     type: object
-  internal_reservation.TimeSlotResp:
+  service_reservation.TimeSlotResp:
     properties:
       end_time:
         example: 2026-01-01 11:00
@@ -132,29 +342,115 @@ definitions:
         example: 2026-01-01 09:00
         type: string
       status:
-        description: pending待审核 / approved已通过
         example: pending
         type: string
     type: object
-host: localhost:8081
+host: localhost:8083
 info:
   contact: {}
-  description: 校友场地预约系统的后端API服务
-  title: 预约系统 API
-  version: "2.0"
+  description: 包含用户端预约、管理员审核、微信网关认证三个子系统的接口文档
+  title: 深圳大学校友会会议室预约系统 API
+  version: "1.0"
 paths:
-  /reservation/{id}:
-    delete:
-      description: 取消指定的预约订单（取消所有关联的时段），仅预约人本人可操作，需要JWT认证
+  /api/v1/auth/admin/info:
+    get:
+      description: 根据 JWT Token 返回当前登录管理员的详细信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 管理员信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_gateway_auth.AdminResp'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_gateway_auth.AdminInfoResp'
+              type: object
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_gateway_auth.AdminResp'
+      security:
+      - BearerAuth: []
+      summary: 获取当前管理员信息（Gateway）
+      tags:
+      - 网关-管理员认证
+  /api/v1/auth/admin/login:
+    post:
+      consumes:
+      - application/json
+      description: 验证管理员用户名密码（直接查询数据库），签发 Admin JWT Token
       parameters:
-      - default: Bearer
-        description: Bearer JWT令牌
-        in: header
-        name: Authorization
+      - description: 管理员登录凭证
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_gateway_auth.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_gateway_auth.AdminResp'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_gateway_auth.LoginResp'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/service_gateway_auth.AdminResp'
+        "401":
+          description: 凭证错误
+          schema:
+            $ref: '#/definitions/service_gateway_auth.AdminResp'
+      summary: 管理员登录（Gateway）
+      tags:
+      - 网关-管理员认证
+  /api/v1/auth/callback:
+    get:
+      description: 微信服务号菜单点击后，微信服务器回调此接口，用 code 换取用户 openid，签发 JWT 后重定向到前端页面
+      parameters:
+      - description: 微信授权临时票据 code
+        in: query
+        name: code
         required: true
         type: string
+      - description: 重定向目标标识（映射到预设的页面URL）
+        in: query
+        name: state
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: 重定向到前端页面（URL 带 token 参数）
+          schema:
+            type: string
+        "400":
+          description: 缺少 code 参数
+          schema:
+            type: object
+        "401":
+          description: 微信授权失效
+          schema:
+            type: object
+        "500":
+          description: Token 生成失败
+          schema:
+            type: object
+      summary: 微信 OAuth 回调
+      tags:
+      - 网关-认证
+  /api/v2/reservation/{id}:
+    delete:
+      description: 用户取消自己的预约订单（仅待审核或已通过状态可取消），同时将关联时段标记为已取消
+      parameters:
       - description: 订单ID
-        example: 1
         in: path
         name: id
         required: true
@@ -165,69 +461,55 @@ paths:
         "200":
           description: 取消成功
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
         "400":
-          description: 请求参数错误
+          description: 订单不存在/状态不允许取消
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
       security:
       - BearerAuth: []
       summary: 取消预约
       tags:
-      - 预约管理
-  /reservation/my:
+      - 预约-用户端
+  /api/v2/reservation/my:
     get:
-      description: 获取当前登录用户的所有预约订单（包含各时段明细），需要JWT认证
-      parameters:
-      - default: Bearer
-        description: Bearer JWT令牌
-        in: header
-        name: Authorization
-        required: true
-        type: string
+      description: 根据 JWT 中的 openid 查询当前用户的所有预约订单（按创建时间倒序）
       produces:
       - application/json
       responses:
         "200":
-          description: 查询成功
+          description: 预约列表
           schema:
             allOf:
-            - $ref: '#/definitions/internal_reservation.Response'
+            - $ref: '#/definitions/service_reservation.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/internal_reservation.OrderResp'
+                    $ref: '#/definitions/service_reservation.OrderResp'
                   type: array
               type: object
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
         "500":
-          description: 服务器内部错误
+          description: 查询失败
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
       security:
       - BearerAuth: []
       summary: 获取我的预约列表
       tags:
-      - 预约管理
-  /reservation/occupied:
+      - 预约-用户端
+  /api/v2/reservation/occupied:
     get:
-      description: 查询指定日期已被预约占用的时间段，需要JWT认证
+      description: 查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态
       parameters:
-      - default: Bearer
-        description: Bearer JWT令牌
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: '查询日期(格式: 2026-01-01)'
-        example: "2026-01-01"
+      - description: 日期，格式 2006-01-02，默认当天
         in: query
         name: date
         type: string
@@ -235,71 +517,408 @@ paths:
       - application/json
       responses:
         "200":
-          description: 查询成功
+          description: 已占用时段列表
           schema:
             allOf:
-            - $ref: '#/definitions/internal_reservation.Response'
+            - $ref: '#/definitions/service_reservation.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/internal_reservation.TimeSlotResp'
+                    $ref: '#/definitions/service_reservation.TimeSlotResp'
                   type: array
               type: object
         "400":
-          description: 请求参数错误
+          description: 日期格式错误
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
-      security:
-      - BearerAuth: []
-      summary: 获取已占用时间段
+            $ref: '#/definitions/service_reservation.Response'
+      summary: 获取已占用时段
       tags:
-      - 预约管理
-  /reservation/submit:
+      - 预约-用户端
+  /api/v2/reservation/submit:
     post:
       consumes:
       - application/json
-      description: 用户提交场地预约申请，支持一次提交1~4个时间段，需要JWT认证
+      description: 用户提交预约申请，包含申请人信息和时段列表（1~4个时段），同一天连续时段自动合并
       parameters:
-      - default: Bearer
-        description: Bearer JWT令牌
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: 预约提交请求（含多个时间段）
+      - description: 预约申请信息
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_reservation.SubmitReq'
+          $ref: '#/definitions/service_reservation.SubmitReq'
       produces:
       - application/json
       responses:
         "200":
-          description: 预约申请提交成功
+          description: 预约提交成功
           schema:
             allOf:
-            - $ref: '#/definitions/internal_reservation.Response'
+            - $ref: '#/definitions/service_reservation.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_reservation.OrderResp'
+                  $ref: '#/definitions/service_reservation.OrderResp'
               type: object
         "400":
-          description: 请求参数错误
+          description: 参数错误/时段冲突
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/internal_reservation.Response'
+            $ref: '#/definitions/service_reservation.Response'
       security:
       - BearerAuth: []
-      summary: 提交预约申请（支持多时段）
+      summary: 提交预约申请
       tags:
-      - 预约管理
+      - 预约-用户端
+  /api/v3/admin/info:
+    get:
+      description: 根据 JWT Token 返回当前登录管理员的 ID、用户名、角色等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 管理员信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_admin_auth.AdminResp'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_admin_auth.AdminInfoResp'
+              type: object
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+      security:
+      - BearerAuth: []
+      summary: 获取当前管理员信息
+      tags:
+      - 管理员-认证
+  /api/v3/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 验证管理员用户名密码（通过 gRPC 调用 Gateway），返回 JWT Token 和管理员信息
+      parameters:
+      - description: 管理员登录凭证
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_admin_auth.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_admin_auth.AdminResp'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_admin_auth.LoginResp'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "401":
+          description: 凭证错误
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+      summary: 管理员登录
+      tags:
+      - 管理员-认证
+  /api/v3/orders:
+    get:
+      description: 分页查询所有预约订单，支持按多个状态筛选（传多个 status 参数取并集），不传则查全部
+      parameters:
+      - description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数，默认20，最大50
+        in: query
+        name: page_size
+        type: integer
+      - collectionFormat: csv
+        description: 状态筛选（可传多个），不传则查全部
+        in: query
+        items:
+          type: integer
+        name: status
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 订单列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_admin_review.Response'
+            - properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '#/definitions/service_admin_review.OrderResp'
+                      type: array
+                    page:
+                      type: integer
+                    page_size:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+              type: object
+        "500":
+          description: 查询失败
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取订单列表
+      tags:
+      - 管理员-审核
+  /api/v3/orders/{id}:
+    get:
+      description: 根据订单ID查询订单完整信息，包含关联时段和审核操作流水记录
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 订单详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/service_admin_review.Response'
+            - properties:
+                data:
+                  properties:
+                    order:
+                      $ref: '#/definitions/service_admin_review.OrderResp'
+                    review_records:
+                      items:
+                        $ref: '#/definitions/service_admin_review.ReviewRecordResp'
+                      type: array
+                  type: object
+              type: object
+        "400":
+          description: 订单不存在
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取订单详情
+      tags:
+      - 管理员-审核
+  /api/v3/review/level1/{id}:
+    post:
+      consumes:
+      - application/json
+      description: 一级管理员对订单进行审核（通过→待二级审核，拒绝→一级驳回），使用乐观锁防止并发冲突
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: '审核操作（action: 1=通过, 2=拒绝）'
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_admin_review.ReviewActionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 审核成功
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "400":
+          description: 参数/状态错误
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "403":
+          description: 权限不足（非一级管理员）
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+      security:
+      - BearerAuth: []
+      summary: 一级审核
+      tags:
+      - 管理员-审核
+  /api/v3/review/level1/{id}/notify:
+    post:
+      description: 一级管理员向终审通过且已设密码的订单用户发送微信模板消息通知
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 通知发送成功
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "400":
+          description: 订单不存在/状态不允许/未设密码
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "403":
+          description: 权限不足
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+      security:
+      - BearerAuth: []
+      summary: 发送审核通过通知
+      tags:
+      - 管理员-通知
+  /api/v3/review/level1/{id}/reject-notify:
+    post:
+      consumes:
+      - application/json
+      description: 一级管理员向被驳回订单的用户发送微信模板消息，需附带驳回原因
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 驳回原因
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_admin_review.RejectionNotifyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 驳回通知发送成功
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "400":
+          description: 订单不存在/状态不允许
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+        "403":
+          description: 权限不足
+          schema:
+            $ref: '#/definitions/service_admin_auth.AdminResp'
+      security:
+      - BearerAuth: []
+      summary: 发送驳回通知
+      tags:
+      - 管理员-通知
+  /api/v3/review/level1/{id}/slots/{slotID}/password:
+    put:
+      consumes:
+      - application/json
+      description: 一级管理员为终审通过的订单中指定时段设置门锁密码（最大20字符）
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 时段ID
+        in: path
+        name: slotID
+        required: true
+        type: integer
+      - description: 门锁密码
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_admin_review.SetPasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "400":
+          description: 参数/状态错误
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+      security:
+      - BearerAuth: []
+      summary: 设置门锁密码
+      tags:
+      - 管理员-审核
+  /api/v3/review/level2/{id}:
+    post:
+      consumes:
+      - application/json
+      description: 二级管理员对已通过一级审核的订单进行终审（通过→终审通过，拒绝→二级驳回），使用乐观锁防止并发冲突
+      parameters:
+      - description: 订单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: '审核操作（action: 1=通过, 2=拒绝）'
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service_admin_review.ReviewActionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 审核成功
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "400":
+          description: 参数/状态错误
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+        "403":
+          description: 权限不足（非二级管理员）
+          schema:
+            $ref: '#/definitions/service_admin_review.Response'
+      security:
+      - BearerAuth: []
+      summary: 二级审核
+      tags:
+      - 管理员-审核
 securityDefinitions:
   BearerAuth:
-    description: 'JWT Bearer令牌认证，格式: Bearer token'
+    description: '在请求头中添加 Authorization: Bearer <token>，用户端和管理员端使用不同的 JWT'
     in: header
     name: Authorization
     type: apiKey
