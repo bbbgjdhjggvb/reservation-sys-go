@@ -6,7 +6,7 @@
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
---- 创建用户角色并设置密码
+-- 创建用户角色并设置密码
 CREATE USER IF NOT EXISTS 'res_user'@'%' IDENTIFIED BY 'xSIn34sU7qQl31kQ3TVfcQ==';
 
 -- =============================================
