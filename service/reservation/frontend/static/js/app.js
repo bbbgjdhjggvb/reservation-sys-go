@@ -300,7 +300,7 @@ async function doSubmit(){
 async function apiRequest(ep,opt={}){
     if(!authToken)throw new Error('NoAuthToken');
     const def={headers:{'Content-Type':'application/json','Authorization':`Bearer ${authToken}`}};
-    const r=await fetch(`/api/v2${ep}`,{...def,...opt,headers:{...def.headers,...opt.headers}});
+    const r=await fetch(`/api/reservation${ep}`,{...def,...opt,headers:{...def.headers,...opt.headers}});
     const d=await r.json();
     if(r.status===401){localStorage.removeItem('auth_token');showToast('登录已过期，请重新进入','error');setTimeout(()=>document.getElementById('tokenError').classList.remove('hidden'),1500);throw new Error('Unauthorized')}
     return d;

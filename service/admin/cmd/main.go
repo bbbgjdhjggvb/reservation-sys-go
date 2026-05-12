@@ -84,7 +84,7 @@ func main() {
 		c.HTML(200, "dashboard.html", nil)
 	})
 
-	api := r.Group("/api/v3")
+	api := r.Group("/api/admin")
 	{
 		api.POST("/auth/login", adminHdl.LoginHandler)
 

@@ -35,7 +35,7 @@ func NewNotifyHandler(notifyCli pb.NotificationServiceClient, repo reservationdb
 }
 
 // RejectionNotifyHandler 发送驳回通知接口。
-// 请求: POST /api/v3/orders/:id/reject-notify
+// 请求: POST /api/admin/orders/:id/reject-notify
 // 权限: 仅一级管理员
 // 流程:
 //  1. 从数据库查询订单信息
@@ -104,7 +104,7 @@ func (h *NotifyHandler) RejectionNotifyHandler(c *gin.Context) {
 }
 
 // NotifyHandler 发送审核通过通知接口。
-// 请求: POST /api/v3/orders/:id/notify
+// 请求: POST /api/admin/orders/:id/notify
 // 权限: 仅一级管理员
 // 流程:
 //  1. 从数据库查询订单信息

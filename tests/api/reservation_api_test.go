@@ -47,7 +47,7 @@ func setupReservationAPI(t *testing.T) (*gomock.Controller, *reservation.MockRes
 
 	r := gin.New()
 
-	api := r.Group("/api/v2")
+	api := r.Group("/api/reservation")
 	api.Use(middleware.AuthMiddleware())
 	{
 		api.POST("/reservation/submit", hdl.SubmitHandler)
@@ -55,7 +55,7 @@ func setupReservationAPI(t *testing.T) (*gomock.Controller, *reservation.MockRes
 		api.DELETE("/reservation/:id", hdl.Cancel)
 	}
 	// GetOccupiedSlots 不需要认证
-	r.GET("/api/v2/reservation/occupied", hdl.GetOccupiedSlots)
+	r.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 	return ctrl, mockRepo, r
 }
@@ -90,7 +90,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 			Slots: []reservationdb.ReservationSlot{{ID: 10}},
 		}, nil)
 
-		req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(body))
+		req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -103,7 +103,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 	})
 
 	t.Run("无Token返回401", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(`{}`))
+		req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(`{}`))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -112,7 +112,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 	})
 
 	t.Run("空body返回400", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(`{}`))
+		req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(`{}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -134,7 +134,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 			]
 		}`
 
-		req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(body))
+		req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -153,7 +153,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 		mockRepo.EXPECT().CreateOrderWithLock(gomock.Any(), gomock.Any()).
 			Return(fmt.Errorf("第1个时间段已被预约"))
 
-		req := httptest.NewRequest("POST", "/api/v2/reservation/submit", strings.NewReader(body))
+		req := httptest.NewRequest("POST", "/api/reservation/reservation/submit", strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
@@ -183,7 +183,7 @@ func TestReservationAPI_GetMyReservations(t *testing.T) {
 			},
 		}, nil)
 
-		req := httptest.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req := httptest.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -195,7 +195,7 @@ func TestReservationAPI_GetMyReservations(t *testing.T) {
 	})
 
 	t.Run("无Token返回401", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req := httptest.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -216,7 +216,7 @@ func TestReservationAPI_GetOccupiedSlots(t *testing.T) {
 				{ID: 1, StartTime: time.Date(2026, 5, 1, 8, 0, 0, 0, time.Local), EndTime: time.Date(2026, 5, 1, 10, 0, 0, 0, time.Local), Status: reservationdb.StatusPending},
 			}, nil)
 
-		req := httptest.NewRequest("GET", "/api/v2/reservation/occupied?date=2026-05-01", nil)
+		req := httptest.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-05-01", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -224,7 +224,7 @@ func TestReservationAPI_GetOccupiedSlots(t *testing.T) {
 	})
 
 	t.Run("日期格式错误返回400", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/api/v2/reservation/occupied?date=invalid", nil)
+		req := httptest.NewRequest("GET", "/api/reservation/reservation/occupied?date=invalid", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -246,7 +246,7 @@ func TestReservationAPI_Cancel(t *testing.T) {
 		}, nil)
 		mockRepo.EXPECT().CancelOrder(uint(1), "test_openid_001").Return(nil)
 
-		req := httptest.NewRequest("DELETE", "/api/v2/reservation/1", nil)
+		req := httptest.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -260,7 +260,7 @@ func TestReservationAPI_Cancel(t *testing.T) {
 	t.Run("订单不存在返回400", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(999)).Return(nil, gorm.ErrRecordNotFound)
 
-		req := httptest.NewRequest("DELETE", "/api/v2/reservation/999", nil)
+		req := httptest.NewRequest("DELETE", "/api/reservation/reservation/999", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -269,7 +269,7 @@ func TestReservationAPI_Cancel(t *testing.T) {
 	})
 
 	t.Run("无Token返回401", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/api/v2/reservation/1", nil)
+		req := httptest.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 

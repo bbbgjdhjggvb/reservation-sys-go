@@ -63,7 +63,7 @@ func internalError(c *gin.Context, msg string) {
 //	@Success		200			{object}	Response{data=object{list=[]OrderResp,total=int,page=int,page_size=int}}	"订单列表"
 //	@Failure		500			{object}	Response	"查询失败"
 //	@Security		BearerAuth
-//	@Router			/api/v3/orders [get]
+//	@Router			/api/admin/orders [get]
 func (h *ReviewHandler) GetOrderListHandler(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -131,7 +131,7 @@ func (h *ReviewHandler) GetOrderListHandler(c *gin.Context) {
 //	@Success		200	{object}	Response{data=object{order=OrderResp,review_records=[]ReviewRecordResp}}	"订单详情"
 //	@Failure		400	{object}	Response	"订单不存在"
 //	@Security		BearerAuth
-//	@Router			/api/v3/orders/{id} [get]
+//	@Router			/api/admin/orders/{id} [get]
 func (h *ReviewHandler) GetOrderDetailHandler(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -180,7 +180,7 @@ func (h *ReviewHandler) GetOrderDetailHandler(c *gin.Context) {
 //	@Failure		401		{object}	Response		"未登录"
 //	@Failure		403		{object}	Response		"权限不足（非一级管理员）"
 //	@Security		BearerAuth
-//	@Router			/api/v3/review/level1/{id} [post]
+//	@Router			/api/admin/review/level1/{id} [post]
 func (h *ReviewHandler) Level1ReviewHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)
 	if !exists {
@@ -235,7 +235,7 @@ func (h *ReviewHandler) Level1ReviewHandler(c *gin.Context) {
 //	@Failure		401		{object}	Response		"未登录"
 //	@Failure		403		{object}	Response		"权限不足（非二级管理员）"
 //	@Security		BearerAuth
-//	@Router			/api/v3/review/level2/{id} [post]
+//	@Router			/api/admin/review/level2/{id} [post]
 func (h *ReviewHandler) Level2ReviewHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)
 	if !exists {
@@ -290,7 +290,7 @@ func (h *ReviewHandler) Level2ReviewHandler(c *gin.Context) {
 //	@Failure		400		{object}	Response		"参数/状态错误"
 //	@Failure		401		{object}	Response		"未登录"
 //	@Security		BearerAuth
-//	@Router			/api/v3/review/level1/{id}/slots/{slotID}/password [put]
+//	@Router			/api/admin/review/level1/{id}/slots/{slotID}/password [put]
 func (h *ReviewHandler) SetPasswordHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)
 	if !exists {
@@ -343,7 +343,7 @@ func (h *ReviewHandler) SetPasswordHandler(c *gin.Context) {
 //	@Failure		401	{object}	service_admin_auth.AdminResp	"未登录"
 //	@Failure		403	{object}	service_admin_auth.AdminResp	"权限不足"
 //	@Security		BearerAuth
-//	@Router			/api/v3/review/level1/{id}/notify [post]
+//	@Router			/api/admin/review/level1/{id}/notify [post]
 func (h *ReviewHandler) NotifyHandler(c *gin.Context) {
 	h.notifyHdl.NotifyHandler(c)
 }
@@ -362,7 +362,7 @@ func (h *ReviewHandler) NotifyHandler(c *gin.Context) {
 //	@Failure		401		{object}	service_admin_auth.AdminResp	"未登录"
 //	@Failure		403		{object}	service_admin_auth.AdminResp	"权限不足"
 //	@Security		BearerAuth
-//	@Router			/api/v3/review/level1/{id}/reject-notify [post]
+//	@Router			/api/admin/review/level1/{id}/reject-notify [post]
 func (h *ReviewHandler) RejectionNotifyHandler(c *gin.Context) {
 	h.notifyHdl.RejectionNotifyHandler(c)
 }

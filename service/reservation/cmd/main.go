@@ -66,7 +66,7 @@ func main() {
 		c.HTML(200, "myorders.html", nil)
 	})
 
-	api := r.Group("/api/v2")
+	api := r.Group("/api/reservation")
 	{
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware())

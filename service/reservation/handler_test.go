@@ -36,7 +36,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.POST("/api/v2/reservation/submit", func(c *gin.Context) {
+	r.POST("/api/reservation/reservation/submit", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.SubmitHandler(c)
 	})
@@ -64,7 +64,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 				Slots: []reservationdb.ReservationSlot{{ID: 1}},
 			}, nil)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -101,7 +101,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 				Slots: []reservationdb.ReservationSlot{{ID: 1}, {ID: 2}, {ID: 3}},
 			}, nil)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -114,7 +114,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		body := map[string]string{"applicant_name": "张三"} // 缺少slots等必填
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -134,7 +134,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -162,7 +162,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -177,7 +177,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 	t.Run("未授权（无openid）", func(t *testing.T) {
 		r2 := gin.New()
 		hdl2 := NewReservationHandler(NewReservationService(mockRepo))
-		r2.POST("/api/v2/reservation/submit", hdl2.SubmitHandler)
+		r2.POST("/api/reservation/reservation/submit", hdl2.SubmitHandler)
 
 		body := SubmitReq{
 			ApplicantName: "张三", AlumniAssociation: "某校友会", Year: 2020,
@@ -188,7 +188,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -204,7 +204,7 @@ func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.GET("/api/v2/reservation/occupied", hdl.GetOccupiedSlots)
+	r.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 	t.Run("获取成功", func(t *testing.T) {
 		mockRepo.EXPECT().
@@ -218,7 +218,7 @@ func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 				},
 			}, nil)
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/occupied?date=2026-03-25", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -232,7 +232,7 @@ func TestReservationHandler_GetMyReservations(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.GET("/api/v2/reservation/my", func(c *gin.Context) {
+	r.GET("/api/reservation/reservation/my", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.GetMyReservations(c)
 	})
@@ -247,7 +247,7 @@ func TestReservationHandler_GetMyReservations(t *testing.T) {
 			},
 		}, nil)
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -264,7 +264,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.DELETE("/api/v2/reservation/:id", func(c *gin.Context) {
+	r.DELETE("/api/reservation/reservation/:id", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.Cancel(c)
 	})
@@ -274,7 +274,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "test_openid_001", Status: reservationdb.StatusPending}, nil)
 		mockRepo.EXPECT().CancelOrder(uint(1), "test_openid_001").Return(nil)
 
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/1", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -286,7 +286,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 	})
 
 	t.Run("无效ID(非数字)", func(t *testing.T) {
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/invalid", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/invalid", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -300,7 +300,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(999)).
 			Return(nil, gorm.ErrRecordNotFound)
 
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/999", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/999", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -314,7 +314,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(2)).
 			Return(&reservationdb.ReservationOrder{ID: 2, OpenID: "other_openid", Status: reservationdb.StatusPending}, nil)
 
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/2", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/2", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -326,9 +326,9 @@ func TestReservationHandler_Cancel(t *testing.T) {
 
 	t.Run("未授权（无openid）", func(t *testing.T) {
 		r2 := gin.New()
-		r2.DELETE("/api/v2/reservation/:id", hdl.Cancel)
+		r2.DELETE("/api/reservation/reservation/:id", hdl.Cancel)
 
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/1", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
 		w := httptest.NewRecorder()
 		r2.ServeHTTP(w, req)
 
@@ -344,9 +344,9 @@ func TestReservationHandler_UnauthorizedAccess(t *testing.T) {
 
 	t.Run("GetMyReservations 无Token返回401", func(t *testing.T) {
 		r := gin.New()
-		r.GET("/api/v2/reservation/my", hdl.GetMyReservations)
+		r.GET("/api/reservation/reservation/my", hdl.GetMyReservations)
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -358,9 +358,9 @@ func TestReservationHandler_UnauthorizedAccess(t *testing.T) {
 
 	t.Run("Cancel 无Token返回401", func(t *testing.T) {
 		r := gin.New()
-		r.DELETE("/api/v2/reservation/:id", hdl.Cancel)
+		r.DELETE("/api/reservation/reservation/:id", hdl.Cancel)
 
-		req, _ := http.NewRequest("DELETE", "/api/v2/reservation/1", nil)
+		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -374,7 +374,7 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 	ctrl, _, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.POST("/api/v2/reservation/submit", func(c *gin.Context) {
+	r.POST("/api/reservation/reservation/submit", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.SubmitHandler(c)
 	})
@@ -383,7 +383,7 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 		body := map[string]any{"applicant_name": "缺字段测试"} // 缺少slots等必填
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -392,7 +392,7 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 	})
 
 	t.Run("空请求体", func(t *testing.T) {
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer([]byte("{}")))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer([]byte("{}")))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -413,7 +413,7 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -431,7 +431,7 @@ func TestReservationHandler_Submit_GetOrderByIDFallback(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.POST("/api/v2/reservation/submit", func(c *gin.Context) {
+	r.POST("/api/reservation/reservation/submit", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.SubmitHandler(c)
 	})
@@ -452,7 +452,7 @@ func TestReservationHandler_Submit_GetOrderByIDFallback(t *testing.T) {
 			Return(nil).Do(func(order *reservationdb.ReservationOrder, slots []reservationdb.ReservationSlot) { order.ID = 100 })
 		mockRepo.EXPECT().FindOrderByID(uint(100)).Return(nil, errors.New("db error"))
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -471,7 +471,7 @@ func TestReservationHandler_GetMyReservations_DBError(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.GET("/api/v2/reservation/my", func(c *gin.Context) {
+	r.GET("/api/reservation/reservation/my", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.GetMyReservations(c)
 	})
@@ -479,7 +479,7 @@ func TestReservationHandler_GetMyReservations_DBError(t *testing.T) {
 	t.Run("数据库查询失败返回500", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrdersByOpenID("test_openid_001").Return(nil, errors.New("db error"))
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -493,10 +493,10 @@ func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.GET("/api/v2/reservation/occupied", hdl.GetOccupiedSlots)
+	r.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 	t.Run("日期格式错误返回400", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/occupied?date=invalid", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=invalid", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -508,7 +508,7 @@ func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db error"))
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/occupied?date=2026-03-25", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -522,7 +522,7 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
 
-	r.POST("/api/v2/reservation/submit", func(c *gin.Context) {
+	r.POST("/api/reservation/reservation/submit", func(c *gin.Context) {
 		c.Set("openid", "test_openid_001")
 		hdl.SubmitHandler(c)
 	})
@@ -541,7 +541,7 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 			CreateOrderWithLock(gomock.Any(), gomock.Any()).
 			Return(fmt.Errorf("第1个时间段已被预约"))
 
-		req, _ := http.NewRequest("POST", "/api/v2/reservation/submit", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", "/api/reservation/reservation/submit", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -554,13 +554,13 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 
 	t.Run("查询已占用时段-缺省date参数使用今天", func(t *testing.T) {
 		r2 := gin.New()
-		r2.GET("/api/v2/reservation/occupied", hdl.GetOccupiedSlots)
+		r2.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 		mockRepo.EXPECT().
 			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
 			Return([]reservationdb.ReservationSlot{}, nil)
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/occupied", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied", nil)
 		w := httptest.NewRecorder()
 		r2.ServeHTTP(w, req)
 
@@ -569,14 +569,14 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 
 	t.Run("查询我的预约-空列表", func(t *testing.T) {
 		r2 := gin.New()
-		r2.GET("/api/v2/reservation/my", func(c *gin.Context) {
+		r2.GET("/api/reservation/reservation/my", func(c *gin.Context) {
 			c.Set("openid", "empty_user")
 			hdl.GetMyReservations(c)
 		})
 
 		mockRepo.EXPECT().FindOrdersByOpenID("empty_user").Return([]*reservationdb.ReservationOrder{}, nil)
 
-		req, _ := http.NewRequest("GET", "/api/v2/reservation/my", nil)
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/my", nil)
 		w := httptest.NewRecorder()
 		r2.ServeHTTP(w, req)
 

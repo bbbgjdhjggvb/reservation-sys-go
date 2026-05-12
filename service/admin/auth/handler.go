@@ -62,7 +62,7 @@ func adminInternalError(c *gin.Context, msg string) {
 //	@Success		200		{object}	AdminResp{data=LoginResp}	"登录成功"
 //	@Failure		400		{object}	AdminResp					"参数错误"
 //	@Failure		401		{object}	AdminResp					"凭证错误"
-//	@Router			/api/v3/auth/login [post]
+//	@Router			/api/admin/auth/login [post]
 func (h *AdminAuthHandler) LoginHandler(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -96,7 +96,7 @@ func (h *AdminAuthHandler) LoginHandler(c *gin.Context) {
 //	@Success		200	{object}	AdminResp{data=AdminInfoResp}	"管理员信息"
 //	@Failure		401	{object}	AdminResp						"未登录"
 //	@Security		BearerAuth
-//	@Router			/api/v3/admin/info [get]
+//	@Router			/api/admin/admin/info [get]
 func (h *AdminAuthHandler) GetAdminInfoHandler(c *gin.Context) {
 	claims, exists := GetAdminInfo(c)
 	if !exists {

@@ -63,7 +63,7 @@ func getOpenID(c *gin.Context) (string, bool) {
 //	@Failure		400		{object}	Response					"参数错误/时段冲突"
 //	@Failure		401		{object}	Response					"未授权"
 //	@Security		BearerAuth
-//	@Router			/api/v2/reservation/submit [post]
+//	@Router			/api/reservation/reservation/submit [post]
 func (h *ReservationHandler) SubmitHandler(c *gin.Context) {
 	var req SubmitReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,7 +131,7 @@ func (h *ReservationHandler) SubmitHandler(c *gin.Context) {
 //	@Failure		401	{object}	Response					"未授权"
 //	@Failure		500	{object}	Response					"查询失败"
 //	@Security		BearerAuth
-//	@Router			/api/v2/reservation/my [get]
+//	@Router			/api/reservation/reservation/my [get]
 func (h *ReservationHandler) GetMyReservations(c *gin.Context) {
 	openid, exists := getOpenID(c)
 	if !exists {
@@ -162,7 +162,7 @@ func (h *ReservationHandler) GetMyReservations(c *gin.Context) {
 //	@Param			date	query		string	false	"日期，格式 2006-01-02，默认当天"
 //	@Success		200		{object}	Response{data=[]TimeSlotResp}	"已占用时段列表"
 //	@Failure		400		{object}	Response						"日期格式错误"
-//	@Router			/api/v2/reservation/occupied [get]
+//	@Router			/api/reservation/reservation/occupied [get]
 func (h *ReservationHandler) GetOccupiedSlots(c *gin.Context) {
 	date := c.Query("date")
 	if date == "" {
@@ -190,7 +190,7 @@ func (h *ReservationHandler) GetOccupiedSlots(c *gin.Context) {
 //	@Failure		400	{object}	Response		"订单不存在/状态不允许取消"
 //	@Failure		401	{object}	Response		"未授权"
 //	@Security		BearerAuth
-//	@Router			/api/v2/reservation/{id} [delete]
+//	@Router			/api/reservation/reservation/{id} [delete]
 func (h *ReservationHandler) Cancel(c *gin.Context) {
 	openid, exists := getOpenID(c)
 	if !exists {

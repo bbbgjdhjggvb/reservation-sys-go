@@ -27,11 +27,11 @@ func TestWeChatCallBack_MissingCode(t *testing.T) {
 	r := gin.New()
 
 	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
-	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
+	r.GET("/api/gateway/auth/callback", hdl.WeChatCallBack)
 
 	// 不带 code 参数
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/auth/callback", nil)
+	req, _ := http.NewRequest("GET", "/api/gateway/auth/callback", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -47,11 +47,11 @@ func TestWeChatCallBack_EmptyCode(t *testing.T) {
 	r := gin.New()
 
 	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
-	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
+	r.GET("/api/gateway/auth/callback", hdl.WeChatCallBack)
 
 	// code 参数为空字符串
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/auth/callback?code=", nil)
+	req, _ := http.NewRequest("GET", "/api/gateway/auth/callback?code=", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -74,7 +74,7 @@ func TestWeChatCallBack_LoginByCodeFail(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
+	r.GET("/api/gateway/auth/callback", hdl.WeChatCallBack)
 
 	// Mock LoginByCode 失败
 	mockOAuth.EXPECT().
@@ -82,7 +82,7 @@ func TestWeChatCallBack_LoginByCodeFail(t *testing.T) {
 		Return(nil, errors.New("oauth error"))
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/auth/callback?code=invalid_code", nil)
+	req, _ := http.NewRequest("GET", "/api/gateway/auth/callback?code=invalid_code", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -105,7 +105,7 @@ func TestWeChatCallBack_Success(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
+	r.GET("/api/gateway/auth/callback", hdl.WeChatCallBack)
 
 	testOpenID := "test_openid_12345"
 
@@ -115,7 +115,7 @@ func TestWeChatCallBack_Success(t *testing.T) {
 		Return(&OAuthAccessTokenResult{OpenID: testOpenID}, nil)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/auth/callback?code=valid_code", nil)
+	req, _ := http.NewRequest("GET", "/api/gateway/auth/callback?code=valid_code", nil)
 	r.ServeHTTP(w, req)
 
 	// 应该重定向到前端页面
@@ -148,10 +148,10 @@ func TestWeChatCallBack_ResponseIsJSON(t *testing.T) {
 	r := gin.New()
 
 	hdl := NewUserAuthHandler(nil, testDefaultRedirect, testRedirectURLs)
-	r.GET("/api/v1/auth/callback", hdl.WeChatCallBack)
+	r.GET("/api/gateway/auth/callback", hdl.WeChatCallBack)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/auth/callback", nil)
+	req, _ := http.NewRequest("GET", "/api/gateway/auth/callback", nil)
 	r.ServeHTTP(w, req)
 
 	// 验证 Content-Type 为 JSON

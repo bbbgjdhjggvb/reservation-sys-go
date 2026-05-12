@@ -56,7 +56,7 @@ func (h *UserAuthHandler) buildRedirectURL(token, state string) string {
 //	@Failure		400		{object}	object	"缺少 code 参数"
 //	@Failure		401		{object}	object	"微信授权失效"
 //	@Failure		500		{object}	object	"Token 生成失败"
-//	@Router			/api/v1/auth/callback [get]
+//	@Router			/api/gateway/auth/callback [get]
 func (h *UserAuthHandler) WeChatCallBack(c *gin.Context) {
 	// 获取微信重定向过来的 code 参数
 	code := c.Query("code")
@@ -155,7 +155,7 @@ func adminInternalError(c *gin.Context, msg string) {
 //	@Success		200		{object}	AdminResp{data=LoginResp}	"登录成功"
 //	@Failure		400		{object}	AdminResp	"参数错误"
 //	@Failure		401		{object}	AdminResp	"凭证错误"
-//	@Router			/api/v1/auth/admin/login [post]
+//	@Router			/api/gateway/auth/admin/login [post]
 func (h *AdminAuthHandler) LoginHandler(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -189,7 +189,7 @@ func (h *AdminAuthHandler) LoginHandler(c *gin.Context) {
 //	@Success		200	{object}	AdminResp{data=AdminInfoResp}	"管理员信息"
 //	@Failure		401	{object}	AdminResp	"未登录"
 //	@Security		BearerAuth
-//	@Router			/api/v1/auth/admin/info [get]
+//	@Router			/api/gateway/auth/admin/info [get]
 func (h *AdminAuthHandler) GetAdminInfoHandler(c *gin.Context) {
 	claims, exists := GetAdminInfo(c)
 	if !exists {

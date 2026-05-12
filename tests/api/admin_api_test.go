@@ -40,13 +40,13 @@ func setupAdminAPI(t *testing.T) (*gomock.Controller, *adminauth.MockAccountServ
 	r := gin.New()
 
 	// 认证路由（无中间件）
-	authGroup := r.Group("/api/v3/auth")
+	authGroup := r.Group("/api/admin/auth")
 	{
 		authGroup.POST("/login", authHdl.LoginHandler)
 	}
 
 	// 需认证的路由
-	api := r.Group("/api/v3")
+	api := r.Group("/api/admin")
 	api.Use(adminauth.AdminAuthMiddleware())
 	{
 		api.GET("/admin/info", authHdl.GetAdminInfoHandler)
@@ -99,7 +99,7 @@ func TestAdminAPI_Login(t *testing.T) {
 				Message:  "success",
 			}, nil)
 
-		req := httptest.NewRequest("POST", "/api/v3/auth/login",
+		req := httptest.NewRequest("POST", "/api/admin/auth/login",
 			strings.NewReader(`{"username":"admin1","password":"123456"}`))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -116,7 +116,7 @@ func TestAdminAPI_Login(t *testing.T) {
 		mockAccount.EXPECT().VerifyAdmin(gomock.Any(), gomock.Any()).
 			Return(&pb.VerifyAdminResp{Success: false, Message: "用户名或密码错误"}, nil)
 
-		req := httptest.NewRequest("POST", "/api/v3/auth/login",
+		req := httptest.NewRequest("POST", "/api/admin/auth/login",
 			strings.NewReader(`{"username":"admin1","password":"wrong"}`))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -134,7 +134,7 @@ func TestAdminAPI_GetAdminInfo(t *testing.T) {
 	token := generateAdminToken(t, 1, "admin1", 1)
 
 	t.Run("成功获取信息", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/api/v3/admin/info", nil)
+		req := httptest.NewRequest("GET", "/api/admin/admin/info", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -143,7 +143,7 @@ func TestAdminAPI_GetAdminInfo(t *testing.T) {
 	})
 
 	t.Run("无Token返回401", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/api/v3/admin/info", nil)
+		req := httptest.NewRequest("GET", "/api/admin/admin/info", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -168,7 +168,7 @@ func TestAdminAPI_GetOrderList(t *testing.T) {
 				},
 			}, int64(1), nil)
 
-		req := httptest.NewRequest("GET", "/api/v3/orders?page=1&page_size=20", nil)
+		req := httptest.NewRequest("GET", "/api/admin/orders?page=1&page_size=20", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -191,7 +191,7 @@ func TestAdminAPI_Level1Review(t *testing.T) {
 		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel1, reservationdb.StatusPendingLevel2).Return(nil)
 		mockRepo.EXPECT().CreateReviewRecord(gomock.Any()).Return(nil)
 
-		req := httptest.NewRequest("POST", "/api/v3/review/level1/1",
+		req := httptest.NewRequest("POST", "/api/admin/review/level1/1",
 			strings.NewReader(`{"action":1,"comment":"通过"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -204,7 +204,7 @@ func TestAdminAPI_Level1Review(t *testing.T) {
 	t.Run("非一级管理员访问被拒绝", func(t *testing.T) {
 		token2 := generateAdminToken(t, 2, "admin2", constants.RoleLevel2)
 
-		req := httptest.NewRequest("POST", "/api/v3/review/level1/1",
+		req := httptest.NewRequest("POST", "/api/admin/review/level1/1",
 			strings.NewReader(`{"action":1,"comment":"通过"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token2)
@@ -227,7 +227,7 @@ func TestAdminAPI_Level2Review(t *testing.T) {
 		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel2, reservationdb.StatusApprovedFinal).Return(nil)
 		mockRepo.EXPECT().CreateReviewRecord(gomock.Any()).Return(nil)
 
-		req := httptest.NewRequest("POST", "/api/v3/review/level2/1",
+		req := httptest.NewRequest("POST", "/api/admin/review/level2/1",
 			strings.NewReader(`{"action":1,"comment":"终审通过"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -240,7 +240,7 @@ func TestAdminAPI_Level2Review(t *testing.T) {
 	t.Run("非二级管理员访问被拒绝", func(t *testing.T) {
 		token1 := generateAdminToken(t, 1, "admin1", constants.RoleLevel1)
 
-		req := httptest.NewRequest("POST", "/api/v3/review/level2/1",
+		req := httptest.NewRequest("POST", "/api/admin/review/level2/1",
 			strings.NewReader(`{"action":1}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token1)
@@ -264,7 +264,7 @@ func TestAdminAPI_SetPassword(t *testing.T) {
 		}, nil)
 		mockRepo.EXPECT().SetSlotPassword(uint(10), "123456").Return(nil)
 
-		req := httptest.NewRequest("PUT", "/api/v3/review/level1/1/slots/10/password",
+		req := httptest.NewRequest("PUT", "/api/admin/review/level1/1/slots/10/password",
 			strings.NewReader(`{"password":"123456"}`))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)

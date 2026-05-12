@@ -33,7 +33,7 @@ esac
 read -p "State 参数 [可选，默认为空]: " STATE
 
 # 构建回调 URL
-CALLBACK_URL="${PROTOCOL}://${SERVER_ADDR}/api/v1/auth/callback"
+CALLBACK_URL="${PROTOCOL}://${SERVER_ADDR}/api/gateway/auth/callback"
 
 # URL 编码
 ENCODED_CALLBACK=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$CALLBACK_URL', safe=''))")

@@ -122,7 +122,7 @@ func main() {
 		server.Send()
 	})
 
-	api := r.Group("/api/v1")
+	api := r.Group("/api/gateway")
 	{
 		api.GET("/auth/callback", auth.GetUserAuthHandler().WeChatCallBack)
 	}
