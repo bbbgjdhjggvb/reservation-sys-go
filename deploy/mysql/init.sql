@@ -1,18 +1,25 @@
 -- 预约系统数据库初始化脚本
--- 创建时间: 2026-04-05
--- 更新时间: 2026-04-24
--- 架构: 订单+时段双表设计（支持多时段批量预约）
+-- 架构: 双数据库设计
+--   home_xy: 账号数据库（users, admins）- Gateway 管理
+--   home_res: 预约+审核数据库（reservation_orders, reservation_slots, review_records）- Reservation + Admin 共享
 
--- 设置字符集
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- 使用数据库
-USE home_xy;
+--- 创建用户角色并设置密码
+CREATE USER IF NOT EXISTS 'res_user'@'%' IDENTIFIED BY 'xSIn34sU7qQl31kQ3TVfcQ==';
 
 -- =============================================
--- 用户表
+-- 数据库1: 账号数据库（Gateway 管理）
 -- =============================================
+
+CREATE DATABASE IF NOT EXISTS `home_xy` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 授权: res_user 对 home_xy 数据库的全部权限
+GRANT ALL PRIVILEGES ON `home_xy`.* TO 'res_user'@'%';
+USE `home_xy`;
+
+-- 用户表
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `openid` VARCHAR(100) NOT NULL COMMENT '微信唯一标识',
@@ -25,10 +32,35 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `idx_users_openid` (`openid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
+-- 管理员表
+CREATE TABLE IF NOT EXISTS `admins` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `username` VARCHAR(50) NOT NULL COMMENT '登录账号',
+    `password` VARCHAR(100) NOT NULL COMMENT '密码（bcrypt哈希）',
+    `real_name` VARCHAR(50) NOT NULL COMMENT '真实姓名',
+    `role` TINYINT NOT NULL DEFAULT 1 COMMENT '角色: 1-一级管理员, 2-二级管理员',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1-正常, 0-禁用',
+    `last_login_at` DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_admins_username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员表';
+
+-- 插入默认管理员账号
+INSERT INTO `admins` (`username`, `password`, `real_name`, `role`) VALUES
+('admin1', '$2a$10$ophtXKaQ85PoqlWd84MF7eKR/kg4EZFH7xfDG2PBKjlKp6teh14Xi', '一级管理员', 1),
+('admin2', '$2a$10$ophtXKaQ85PoqlWd84MF7eKR/kg4EZFH7xfDG2PBKjlKp6teh14Xi', '二级管理员', 2)
+ON DUPLICATE KEY UPDATE `username`=VALUES(`username`);
+
 -- =============================================
--- 预约订单表：一次提交生成一个订单
--- 存放申请人信息和共享字段
+-- 数据库2: 预约+审核数据库（Reservation + Admin 共享）
 -- =============================================
+
+CREATE DATABASE IF NOT EXISTS `home_res` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `home_res`;
+
+-- 预约订单表
 CREATE TABLE IF NOT EXISTS `reservation_orders` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `order_no` VARCHAR(50) NOT NULL COMMENT '订单号',
@@ -40,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `reservation_orders` (
     `reason` VARCHAR(500) NOT NULL COMMENT '会议内容/预约理由',
     `phone` VARCHAR(20) NOT NULL COMMENT '联系电话',
     `total_slots` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '预约时段数量(1~4)',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '整体状态: 0-待审核, 1-通过, 2-拒绝, 3-完成, 4-取消',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '整体状态: 0-待审核, 1-通过, 2-拒绝, 3-完成, 4-取消, 5-待二级审核, 6-一级驳回, 7-二级驳回',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -50,10 +82,7 @@ CREATE TABLE IF NOT EXISTS `reservation_orders` (
     KEY `idx_orders_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约订单表';
 
--- =============================================
--- 预约时段明细表：每个时间段一行
--- 独立状态、独立门锁密码
--- =============================================
+-- 预约时段明细表
 CREATE TABLE IF NOT EXISTS `reservation_slots` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `order_id` BIGINT UNSIGNED NOT NULL COMMENT '关联订单ID',
@@ -69,5 +98,23 @@ CREATE TABLE IF NOT EXISTS `reservation_slots` (
     KEY `idx_slots_status` (`status`),
     CONSTRAINT `fk_slots_order_id` FOREIGN KEY (`order_id`) REFERENCES `reservation_orders`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约时段明细表';
+
+-- 审核记录表
+CREATE TABLE IF NOT EXISTS `review_records` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `order_id` BIGINT UNSIGNED NOT NULL COMMENT '关联订单ID',
+    `reviewer_id` BIGINT UNSIGNED NOT NULL COMMENT '审核人ID',
+    `reviewer_role` TINYINT NOT NULL COMMENT '审核人角色: 1-一级, 2-二级',
+    `action` TINYINT NOT NULL COMMENT '操作: 1-通过, 2-拒绝',
+    `comment` VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_review_records_order_id` (`order_id`),
+    KEY `idx_review_records_reviewer_id` (`reviewer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核记录表';
+
+-- 授权: res_user 对 home_res 数据库的全部权限
+GRANT ALL PRIVILEGES ON `home_res`.* TO 'res_user'@'%';
+FLUSH PRIVILEGES;
 
 -- 完成
