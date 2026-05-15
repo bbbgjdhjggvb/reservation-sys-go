@@ -95,7 +95,8 @@ services:
       - "443:443"
     volumes:
       - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
-      - ./service/reservation/frontend/static/:/usr/share/nginx/html/static/:ro
+      - ./dist/reservation/:/usr/share/nginx/html/reservation/:ro
+      - ./dist/admin/:/usr/share/nginx/html/admin/:ro
       - ./deploy/ssl:/etc/nginx/ssl:ro
     networks:
       - reservation-net

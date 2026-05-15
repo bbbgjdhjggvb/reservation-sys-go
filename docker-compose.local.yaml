@@ -16,10 +16,7 @@ services:
     container_name: reservation-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: home_xy
-      MYSQL_USER: res_user
-      MYSQL_PASSWORD: 12345678
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
     ports:
       - "3307:3306"
     volumes:
@@ -129,6 +126,9 @@ services:
       - "80:80"
     volumes:
       - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
+      - ./dist/reservation/:/usr/share/nginx/html/reservation/:ro
+      - ./dist/admin/:/usr/share/nginx/html/admin/:ro
+      - ./deploy/ssl:/etc/nginx/ssl:ro
     networks:
       - reservation-net
 
