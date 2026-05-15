@@ -13,3 +13,10 @@
 # 打包文件
 *.tar
 *.tar.gz
+
+# 前端构建产物
+dist/
+
+# 前端依赖
+frontend/node_modules/
+frontend/packages/*/node_modules/
