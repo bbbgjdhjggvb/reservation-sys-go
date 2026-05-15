@@ -1,0 +1,5 @@
+packages:
+  - 'packages/*'      # 生命 packages 目录下的每个子目录都是一个独立的仓库
+allowBuilds:
+  esbuild: true
+  vue-demi: true

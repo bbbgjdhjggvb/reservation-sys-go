@@ -1,0 +1,14 @@
+{
+  "name": "reservation-frontend",
+  "private": true,
+  "scripts": {
+    "dev:reservation": "pnpm --filter @reservation/app dev",
+    "dev:admin": "pnpm --filter @reservation/admin dev",
+    "build:reservation": "pnpm --filter @reservation/app build",
+    "build:admin": "pnpm --filter @reservation/admin build",
+    "build:all": "pnpm build:reservation && pnpm build:admin"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.0"
+  }
+}
