@@ -2,6 +2,9 @@
 
 TAG="latest"
 
+echo "安装前端依赖并构建..."
+cd frontend && pnpm install && pnpm build:all && cd ..
+
 echo "清理旧文件..."
 rm -f reservation-*.tar reservation-sys-test.tar.gz reservation.tar admin.tar gateway.tar
 
@@ -30,7 +33,6 @@ tar -czf reservation-sys.tar.gz \
     service/reservation/configs/config_v2.yaml \
     service/admin/configs/config_v3.yaml \
     deploy/ \
-    service/reservation/frontend/ \
-    service/admin/frontend/
+    dist/
 
 echo "完成！输出: reservation-sys.tar.gz"
