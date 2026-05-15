@@ -22,7 +22,6 @@ RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /reservation /app/reservation
 COPY service/reservation/configs/ /app/service/reservation/configs/
-COPY service/reservation/frontend/ /app/service/reservation/frontend/
 
 ENV TZ=Asia/Shanghai
 

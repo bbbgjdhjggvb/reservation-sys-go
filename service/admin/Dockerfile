@@ -22,7 +22,6 @@ RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /admin /app/admin
 COPY service/admin/configs/ /app/service/admin/configs/
-COPY service/admin/frontend/ /app/service/admin/frontend/
 
 ENV TZ=Asia/Shanghai
 
