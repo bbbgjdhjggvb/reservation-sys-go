@@ -54,18 +54,6 @@ func main() {
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware(cfg.Server.CORSAllowOrigins))
 
-	r.LoadHTMLGlob("service/reservation/frontend/*.html")
-
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index.html", nil)
-	})
-	r.GET("/reserve", func(c *gin.Context) {
-		c.HTML(200, "index.html", nil)
-	})
-	r.GET("/myorders", func(c *gin.Context) {
-		c.HTML(200, "myorders.html", nil)
-	})
-
 	api := r.Group("/api/reservation")
 	{
 		protected := api.Group("")

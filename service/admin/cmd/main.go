@@ -74,16 +74,6 @@ func main() {
 	r := gin.Default()
 	r.Use(auth.CORSMiddleware(cfg.Server.CORSAllowOrigins))
 
-	r.LoadHTMLGlob("service/admin/frontend/*.html")
-
-	r.GET("/admin", func(c *gin.Context) {
-		c.HTML(200, "index.html", nil)
-	})
-
-	r.GET("/admin/dashboard", func(c *gin.Context) {
-		c.HTML(200, "dashboard.html", nil)
-	})
-
 	api := r.Group("/api/admin")
 	{
 		api.POST("/auth/login", adminHdl.LoginHandler)
