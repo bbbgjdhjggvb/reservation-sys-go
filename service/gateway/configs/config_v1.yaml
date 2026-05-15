@@ -14,9 +14,9 @@ wechat:
   # 审核通过通知模板ID（需在微信公众平台申请模板消息后填入）
   template_id: "_vyv6J7c_YNBSnBJ6Este2P8k04s3gmmDL-Wr9thNJo"
   menu_config_path: "service/gateway/configs/menu.json"
-  default_redirect: "http://106.52.23.213/reserve"
+  default_redirect: "http://106.52.23.213/"
   redirect_urls:
-    reserve: "http://106.52.23.213/reserve"
+    reserve: "http://106.52.23.213/"
     myorders: "http://106.52.23.213/myorders"
 
 mysql:

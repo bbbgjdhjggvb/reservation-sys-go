@@ -21,7 +21,7 @@ mysql:
   host: "mysql"
   port: 3306
   user: "res_user"
-  password: "12345678"
+  password: "xSIn34sU7qQl31kQ3TVfcQ=="
   dbname: "home_xy"
   max_idle_conns: 10
   max_open_conns: 100
