@@ -1,0 +1,26 @@
+# 审核服务配置 (v3) - 管理员审核系统
+# 用途: 处理预约审核业务（一级/二级审核）
+# 数据库: home_res（预约+审核数据库，与 reservation 共享）
+
+server:
+  port: ":8082"
+  mode: "debug"
+  cors_allow_origins:
+    - "*"
+
+mysql:
+  host: "mysql"
+  port: 3306
+  user: "res_user"
+  password: "xSIn34sU7qQl31kQ3TVfcQ=="
+  dbname: "home_res"
+  max_idle_conns: 10
+  max_open_conns: 50
+
+jwt:
+  secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+  expire_time: 24
+
+# gRPC 客户端配置（仅连接 Gateway）
+grpc:
+  gateway_addr: "gateway:9080"  # Gateway gRPC 地址（通知服务 + 账号验证服务）
