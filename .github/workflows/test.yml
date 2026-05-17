@@ -1,8 +1,14 @@
 name: Test
 
 on:
+  push:
+    branches: [master, main]
   pull_request:
     branches: [master, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -17,10 +23,14 @@ jobs:
           go-version: "1.24"
 
       - name: Run unit tests
-        run: go test $(go list ./... | grep -v '/tests/integration') -v -count=1 -coverprofile=coverage.out
+        run: go test $(go list ./... | grep -v '/tests/integration') -v -count=1 -race -timeout=5m -coverprofile=coverage.out
+
+      - name: Go vet
+        run: go vet ./...
 
       - name: Build check
         run: |
           go build ./service/gateway/cmd/
           go build ./service/reservation/cmd/
           go build ./service/admin/cmd/
+          go build ./service/swagger/cmd/
