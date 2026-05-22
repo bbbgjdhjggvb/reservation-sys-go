@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/pkg/jwt"
+	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/service/admin/auth"
 
 	"github.com/gin-gonic/gin"

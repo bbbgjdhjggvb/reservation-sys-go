@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"reservation-sys/service/admin/auth"
-	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/pkg/constants"
+	reservationdb "reservation-sys/pkg/reservationdb"
+	"reservation-sys/service/admin/auth"
 
 	"github.com/gin-gonic/gin"
 )

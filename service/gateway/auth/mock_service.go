@@ -43,7 +43,7 @@ func (m *MockOAuthClient) GetUserAccessToken(code string) (*OAuthAccessTokenResu
 }
 
 // GetUserAccessToken indicates an expected call of GetUserAccessToken.
-func (mr *MockOAuthClientMockRecorder) GetUserAccessToken(code interface{}) *gomock.Call {
+func (mr *MockOAuthClientMockRecorder) GetUserAccessToken(code any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAccessToken", reflect.TypeOf((*MockOAuthClient)(nil).GetUserAccessToken), code)
 }
@@ -57,7 +57,7 @@ func (m *MockOAuthClient) GetUserInfo(openid string) string {
 }
 
 // GetUserInfo indicates an expected call of GetUserInfo.
-func (mr *MockOAuthClientMockRecorder) GetUserInfo(openid interface{}) *gomock.Call {
+func (mr *MockOAuthClientMockRecorder) GetUserInfo(openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserInfo", reflect.TypeOf((*MockOAuthClient)(nil).GetUserInfo), openid)
 }
@@ -94,7 +94,7 @@ func (m *MockUserInfoProvider) GetUserInfo(openid string) string {
 }
 
 // GetUserInfo indicates an expected call of GetUserInfo.
-func (mr *MockUserInfoProviderMockRecorder) GetUserInfo(openid interface{}) *gomock.Call {
+func (mr *MockUserInfoProviderMockRecorder) GetUserInfo(openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserInfo", reflect.TypeOf((*MockUserInfoProvider)(nil).GetUserInfo), openid)
 }

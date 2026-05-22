@@ -41,6 +41,7 @@ func NewNotifyHandler(notifyCli pb.NotificationServiceClient, repo reservationdb
 //  1. 从数据库查询订单信息
 //  2. 校验订单状态为"已驳回"
 //  3. 通过 gRPC 调用 Gateway 发送微信驳回模板消息
+//
 // 响应: 200 通知发送成功，400 订单不存在/状态不允许，500 通知发送失败
 func (h *NotifyHandler) RejectionNotifyHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)
@@ -110,6 +111,7 @@ func (h *NotifyHandler) RejectionNotifyHandler(c *gin.Context) {
 //  1. 从数据库查询订单信息
 //  2. 校验订单状态为"终审通过"且已设置门锁密码
 //  3. 通过 gRPC 调用 Gateway 发送微信审核通过模板消息
+//
 // 响应: 200 通知发送成功，400 订单不存在/状态不允许/未设密码，500 通知发送失败
 func (h *NotifyHandler) NotifyHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)

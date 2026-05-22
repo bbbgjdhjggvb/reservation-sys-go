@@ -8,7 +8,7 @@ package review
 //   - Action: 审核动作（1=通过, 2=拒绝）
 //   - Comment: 审核意见，最大500字
 type ReviewActionReq struct {
-	Action  int    `json:"action" binding:"required,oneof=1 2"`         // 1:通过, 2:拒绝
+	Action  int    `json:"action" binding:"required,oneof=1 2"`      // 1:通过, 2:拒绝
 	Comment string `json:"comment" binding:"max=500" example:"审核通过"` // 审核意见
 }
 

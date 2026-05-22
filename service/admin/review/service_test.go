@@ -57,7 +57,7 @@ func TestReviewService_Level1Review(t *testing.T) {
 		{
 			name:    "order_not_found",
 			orderID: 99, adminID: 1,
-			req:       &ReviewActionReq{Action: 1},
+			req: &ReviewActionReq{Action: 1},
 			mockSetup: func() {
 				mockRepo.EXPECT().FindOrderByID(uint(99)).Return(nil, errors.New("record not found"))
 			},

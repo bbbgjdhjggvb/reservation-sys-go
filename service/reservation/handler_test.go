@@ -20,6 +20,7 @@ import (
 )
 
 func setupTestHandler(t *testing.T) (*gomock.Controller, *MockReservationRepository, *ReservationHandler, *gin.Engine) {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	ctrl := gomock.NewController(t)
 	mockRepo := NewMockReservationRepository(ctrl)

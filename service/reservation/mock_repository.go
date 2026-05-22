@@ -44,7 +44,7 @@ func (m *MockReservationRepository) CreateOrderWithLock(order *reservationdb.Res
 }
 
 // CreateOrderWithLock indicates an expected call of CreateOrderWithLock.
-func (mr *MockReservationRepositoryMockRecorder) CreateOrderWithLock(order, slots interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) CreateOrderWithLock(order, slots any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrderWithLock", reflect.TypeOf((*MockReservationRepository)(nil).CreateOrderWithLock), order, slots)
 }
@@ -59,7 +59,7 @@ func (m *MockReservationRepository) FindOrderByID(id uint) (*reservationdb.Reser
 }
 
 // FindOrderByID indicates an expected call of FindOrderByID.
-func (mr *MockReservationRepositoryMockRecorder) FindOrderByID(id interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) FindOrderByID(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrderByID", reflect.TypeOf((*MockReservationRepository)(nil).FindOrderByID), id)
 }
@@ -74,7 +74,7 @@ func (m *MockReservationRepository) FindOrdersByOpenID(openid string) ([]*reserv
 }
 
 // FindOrdersByOpenID indicates an expected call of FindOrdersByOpenID.
-func (mr *MockReservationRepositoryMockRecorder) FindOrdersByOpenID(openid interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) FindOrdersByOpenID(openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrdersByOpenID", reflect.TypeOf((*MockReservationRepository)(nil).FindOrdersByOpenID), openid)
 }
@@ -90,7 +90,7 @@ func (m *MockReservationRepository) ListOrders(statuses []int, page, pageSize in
 }
 
 // ListOrders indicates an expected call of ListOrders.
-func (mr *MockReservationRepositoryMockRecorder) ListOrders(statuses, page, pageSize interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) ListOrders(statuses, page, pageSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockReservationRepository)(nil).ListOrders), statuses, page, pageSize)
 }
@@ -104,7 +104,7 @@ func (m *MockReservationRepository) UpdateOrderStatus(orderID uint, fromStatus, 
 }
 
 // UpdateOrderStatus indicates an expected call of UpdateOrderStatus.
-func (mr *MockReservationRepositoryMockRecorder) UpdateOrderStatus(orderID, fromStatus, toStatus interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) UpdateOrderStatus(orderID, fromStatus, toStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockReservationRepository)(nil).UpdateOrderStatus), orderID, fromStatus, toStatus)
 }
@@ -118,7 +118,7 @@ func (m *MockReservationRepository) CancelOrder(orderID uint, openid string) err
 }
 
 // CancelOrder indicates an expected call of CancelOrder.
-func (mr *MockReservationRepositoryMockRecorder) CancelOrder(orderID, openid interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) CancelOrder(orderID, openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOrder", reflect.TypeOf((*MockReservationRepository)(nil).CancelOrder), orderID, openid)
 }
@@ -133,7 +133,7 @@ func (m *MockReservationRepository) FindSlotsByTimeRange(start, end time.Time) (
 }
 
 // FindSlotsByTimeRange indicates an expected call of FindSlotsByTimeRange.
-func (mr *MockReservationRepositoryMockRecorder) FindSlotsByTimeRange(start, end interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) FindSlotsByTimeRange(start, end any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSlotsByTimeRange", reflect.TypeOf((*MockReservationRepository)(nil).FindSlotsByTimeRange), start, end)
 }
@@ -147,7 +147,7 @@ func (m *MockReservationRepository) UpdateSlotStatus(slotID uint, status int) er
 }
 
 // UpdateSlotStatus indicates an expected call of UpdateSlotStatus.
-func (mr *MockReservationRepositoryMockRecorder) UpdateSlotStatus(slotID, status interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) UpdateSlotStatus(slotID, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSlotStatus", reflect.TypeOf((*MockReservationRepository)(nil).UpdateSlotStatus), slotID, status)
 }
@@ -161,7 +161,7 @@ func (m *MockReservationRepository) SetSlotPassword(slotID uint, password string
 }
 
 // SetSlotPassword indicates an expected call of SetSlotPassword.
-func (mr *MockReservationRepositoryMockRecorder) SetSlotPassword(slotID, password interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) SetSlotPassword(slotID, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSlotPassword", reflect.TypeOf((*MockReservationRepository)(nil).SetSlotPassword), slotID, password)
 }
@@ -175,7 +175,7 @@ func (m *MockReservationRepository) CreateReviewRecord(record *reservationdb.Rev
 }
 
 // CreateReviewRecord indicates an expected call of CreateReviewRecord.
-func (mr *MockReservationRepositoryMockRecorder) CreateReviewRecord(record interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) CreateReviewRecord(record any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReviewRecord", reflect.TypeOf((*MockReservationRepository)(nil).CreateReviewRecord), record)
 }
@@ -190,7 +190,7 @@ func (m *MockReservationRepository) FindReviewRecordsByOrderID(orderID uint) ([]
 }
 
 // FindReviewRecordsByOrderID indicates an expected call of FindReviewRecordsByOrderID.
-func (mr *MockReservationRepositoryMockRecorder) FindReviewRecordsByOrderID(orderID interface{}) *gomock.Call {
+func (mr *MockReservationRepositoryMockRecorder) FindReviewRecordsByOrderID(orderID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindReviewRecordsByOrderID", reflect.TypeOf((*MockReservationRepository)(nil).FindReviewRecordsByOrderID), orderID)
 }

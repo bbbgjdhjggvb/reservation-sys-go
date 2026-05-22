@@ -21,12 +21,12 @@ func TestUserAuthService_LoginByCode(t *testing.T) {
 	svc := NewUserAuthService(mockRepo, mockOAuth)
 
 	tests := []struct {
-		name      string
-		code      string
-		mockSetup func()
+		name       string
+		code       string
+		mockSetup  func()
 		wantOpenID string
-		wantErr   bool
-		errMsg    string
+		wantErr    bool
+		errMsg     string
 	}{
 		{
 			name: "登录成功",

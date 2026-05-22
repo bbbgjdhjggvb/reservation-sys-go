@@ -41,7 +41,7 @@ func (m *MockRepository) CreateOrderWithLock(order *reservationdb.ReservationOrd
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) CreateOrderWithLock(order, slots interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateOrderWithLock(order, slots any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrderWithLock", reflect.TypeOf((*MockRepository)(nil).CreateOrderWithLock), order, slots)
 }
@@ -55,7 +55,7 @@ func (m *MockRepository) FindOrderByID(id uint) (*reservationdb.ReservationOrder
 	return ret0, ret1
 }
 
-func (mr *MockRepositoryMockRecorder) FindOrderByID(id interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FindOrderByID(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrderByID", reflect.TypeOf((*MockRepository)(nil).FindOrderByID), id)
 }
@@ -69,7 +69,7 @@ func (m *MockRepository) FindOrdersByOpenID(openid string) ([]*reservationdb.Res
 	return ret0, ret1
 }
 
-func (mr *MockRepositoryMockRecorder) FindOrdersByOpenID(openid interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FindOrdersByOpenID(openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrdersByOpenID", reflect.TypeOf((*MockRepository)(nil).FindOrdersByOpenID), openid)
 }
@@ -84,7 +84,7 @@ func (m *MockRepository) ListOrders(statuses []int, page, pageSize int) ([]*rese
 	return ret0, ret1, ret2
 }
 
-func (mr *MockRepositoryMockRecorder) ListOrders(statuses, page, pageSize interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListOrders(statuses, page, pageSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockRepository)(nil).ListOrders), statuses, page, pageSize)
 }
@@ -97,7 +97,7 @@ func (m *MockRepository) UpdateOrderStatus(orderID uint, fromStatus, toStatus in
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) UpdateOrderStatus(orderID, fromStatus, toStatus interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdateOrderStatus(orderID, fromStatus, toStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockRepository)(nil).UpdateOrderStatus), orderID, fromStatus, toStatus)
 }
@@ -110,7 +110,7 @@ func (m *MockRepository) CancelOrder(orderID uint, openid string) error {
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) CancelOrder(orderID, openid interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CancelOrder(orderID, openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOrder", reflect.TypeOf((*MockRepository)(nil).CancelOrder), orderID, openid)
 }
@@ -124,7 +124,7 @@ func (m *MockRepository) FindSlotsByTimeRange(start, end time.Time) ([]reservati
 	return ret0, ret1
 }
 
-func (mr *MockRepositoryMockRecorder) FindSlotsByTimeRange(start, end interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FindSlotsByTimeRange(start, end any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSlotsByTimeRange", reflect.TypeOf((*MockRepository)(nil).FindSlotsByTimeRange), start, end)
 }
@@ -137,7 +137,7 @@ func (m *MockRepository) UpdateSlotStatus(slotID uint, status int) error {
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) UpdateSlotStatus(slotID, status interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdateSlotStatus(slotID, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSlotStatus", reflect.TypeOf((*MockRepository)(nil).UpdateSlotStatus), slotID, status)
 }
@@ -150,7 +150,7 @@ func (m *MockRepository) SetSlotPassword(slotID uint, password string) error {
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) SetSlotPassword(slotID, password interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) SetSlotPassword(slotID, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSlotPassword", reflect.TypeOf((*MockRepository)(nil).SetSlotPassword), slotID, password)
 }
@@ -163,7 +163,7 @@ func (m *MockRepository) CreateReviewRecord(record *reservationdb.ReviewRecord) 
 	return ret0
 }
 
-func (mr *MockRepositoryMockRecorder) CreateReviewRecord(record interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateReviewRecord(record any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReviewRecord", reflect.TypeOf((*MockRepository)(nil).CreateReviewRecord), record)
 }
@@ -177,7 +177,7 @@ func (m *MockRepository) FindReviewRecordsByOrderID(orderID uint) ([]reservation
 	return ret0, ret1
 }
 
-func (mr *MockRepositoryMockRecorder) FindReviewRecordsByOrderID(orderID interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FindReviewRecordsByOrderID(orderID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindReviewRecordsByOrderID", reflect.TypeOf((*MockRepository)(nil).FindReviewRecordsByOrderID), orderID)
 }

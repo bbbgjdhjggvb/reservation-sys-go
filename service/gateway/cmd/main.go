@@ -45,10 +45,13 @@ func main() {
 	gin.SetMode(cfg.Server.Mode)
 
 	// 初始化认证数据库（home_xy：users, admins）
-	db := platform.InitDB(authconfig.GetMySQL())
+	db, err := platform.InitDB(authconfig.GetMySQL())
+	if err != nil {
+		log.Fatalf("[gateway] 数据库初始化失败: %v", err)
+	}
 
 	if _, err := platform.InitRedis(authconfig.GetRedis()); err != nil {
-		log.Fatalf("[error][platform]: Redis 初始化失败: %v", err)
+		log.Fatalf("[gateway] Redis 初始化失败: %v", err)
 	}
 
 	jwtCfg := authconfig.GetJWT()
@@ -71,8 +74,12 @@ func main() {
 	})
 
 	// 初始化认证模块（用户 + 管理员）
-	auth.InitModule(db, oa, cfg.Wechat.DefaultRedirect, cfg.Wechat.RedirectURLs)
-	auth.InitAdminModule(db)
+	if err := auth.InitModule(db, oa, cfg.Wechat.DefaultRedirect, cfg.Wechat.RedirectURLs); err != nil {
+		log.Fatalf("[gateway] 用户认证模块初始化失败: %v", err)
+	}
+	if err := auth.InitAdminModule(db); err != nil {
+		log.Fatalf("[gateway] 管理员认证模块初始化失败: %v", err)
+	}
 
 	// 初始化通知模块
 	notification.InitModule(auth.GetUserAuthService(), oa, cfg.Wechat.TemplateID)

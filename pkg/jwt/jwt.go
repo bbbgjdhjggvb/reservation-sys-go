@@ -129,7 +129,7 @@ func GenerateAdminToken(adminID uint, username string, role int) (string, error)
 
 // ParseAdminToken 解析并验证管理员 JWT Token
 func ParseAdminToken(tokenString string) (*AdminClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &AdminClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &AdminClaims{}, func(token *jwt.Token) (any, error) {
 		return adminSecret, nil
 	})
 

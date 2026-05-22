@@ -37,7 +37,7 @@ func (m *MockNotificationServiceClient) EXPECT() *MockNotificationServiceClientM
 // SendApprovalNotification mocks base method.
 func (m *MockNotificationServiceClient) SendApprovalNotification(ctx context.Context, in *pb.ApprovalNotificationReq, opts ...grpc.CallOption) (*pb.NotificationResp, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
+	varargs := []any{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -48,16 +48,16 @@ func (m *MockNotificationServiceClient) SendApprovalNotification(ctx context.Con
 }
 
 // SendApprovalNotification indicates an expected call.
-func (mr *MockNotificationServiceClientMockRecorder) SendApprovalNotification(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockNotificationServiceClientMockRecorder) SendApprovalNotification(ctx, in any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
+	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendApprovalNotification", reflect.TypeOf((*MockNotificationServiceClient)(nil).SendApprovalNotification), varargs...)
 }
 
 // SendRejectionNotification mocks base method.
 func (m *MockNotificationServiceClient) SendRejectionNotification(ctx context.Context, in *pb.RejectionNotificationReq, opts ...grpc.CallOption) (*pb.NotificationResp, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
+	varargs := []any{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -68,8 +68,8 @@ func (m *MockNotificationServiceClient) SendRejectionNotification(ctx context.Co
 }
 
 // SendRejectionNotification indicates an expected call.
-func (mr *MockNotificationServiceClientMockRecorder) SendRejectionNotification(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockNotificationServiceClientMockRecorder) SendRejectionNotification(ctx, in any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
+	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendRejectionNotification", reflect.TypeOf((*MockNotificationServiceClient)(nil).SendRejectionNotification), varargs...)
 }

@@ -16,8 +16,8 @@ import (
 const testDefaultRedirect = "http://localhost:8081/reserve"
 
 var testRedirectURLs = map[string]string{
-	"reserve":   "http://localhost:8081/reserve",
-	"myorders":  "http://localhost:8081/myorders",
+	"reserve":  "http://localhost:8081/reserve",
+	"myorders": "http://localhost:8081/myorders",
 }
 
 // ---------- WeChatCallBack Handler 测试 ----------

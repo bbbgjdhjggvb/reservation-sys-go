@@ -43,7 +43,7 @@ func (m *MockUserRepository) GetByOpenID(openid string) (*User, error) {
 }
 
 // GetByOpenID indicates an expected call of GetByOpenID.
-func (mr *MockUserRepositoryMockRecorder) GetByOpenID(openid interface{}) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) GetByOpenID(openid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOpenID", reflect.TypeOf((*MockUserRepository)(nil).GetByOpenID), openid)
 }
@@ -57,7 +57,7 @@ func (m *MockUserRepository) UpdateStatus(openid string, status int) error {
 }
 
 // UpdateStatus indicates an expected call of UpdateStatus.
-func (mr *MockUserRepositoryMockRecorder) UpdateStatus(openid, status interface{}) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) UpdateStatus(openid, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockUserRepository)(nil).UpdateStatus), openid, status)
 }
@@ -71,7 +71,7 @@ func (m *MockUserRepository) Upsert(user *User) error {
 }
 
 // Upsert indicates an expected call of Upsert.
-func (mr *MockUserRepositoryMockRecorder) Upsert(user interface{}) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) Upsert(user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserRepository)(nil).Upsert), user)
 }
