@@ -9,8 +9,8 @@ server:
     - "*"
 
 mysql:
-  host: "mysql"
-  port: 3306
+  host: "localhost"
+  port: 3307
   user: "res_user"
   password: "xSIn34sU7qQl31kQ3TVfcQ=="
   dbname: "home_res"
