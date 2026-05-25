@@ -24,14 +24,15 @@ func miniredisPort(mr *miniredis.Miniredis) int {
 	return 6379
 }
 
-/* func InitRedis(cfg *config.RedisConfig) (*redis.Client, error) 测试
- * 函数功能：根据传入的配置初始化 redis 连接
- * 测试场景：
- * 1. 成功连接到 Redis
- * 2. 使用密码连接 Redis
- * 3. 验证 DB 参数是否有效
- * 4. 验证最大连接池配置是否有效
- */
+// func InitRedis(cfg *config.RedisConfig) (*redis.Client, error) 测试
+//
+// 函数功能：根据传入的配置初始化 redis 连接
+//
+// 测试场景：
+// 1. 成功连接到 Redis
+// 2. 使用密码连接 Redis
+// 3. 验证 DB 参数是否有效
+// 4. 验证最大连接池配置是否有效
 func TestInitRedis_Success(t *testing.T) {
 	// 使用 miniredis 模拟 Redis 程序
 	mr := miniredis.RunT(t)

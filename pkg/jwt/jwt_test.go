@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-/* func GenerateUserToken(openid string)(string, error) 测试
- * 函数功能：根据用户的 opendi 生成 JWT token
- * 测试场景：
- * 1. 正常生成token，并且可以通过 ParseUserToken 函数解析
- */
+// func GenerateUserToken(openid string)(string, error) 测试
+//
+// 函数功能：根据用户的 opendi 生成 JWT token
+//
+// 测试场景：
+// 1. 正常生成token，并且可以通过 ParseUserToken 函数解析
 func TestGenerateUserToken(t *testing.T) {
 	InitUserJWT("test-user-secret-key-123456", 24)
 
@@ -29,14 +30,15 @@ func TestGenerateUserToken(t *testing.T) {
 	})
 }
 
-/* func ParseUserToken(tokenString string) (*UserClaims, error) 测试
- * 函数功能：根据令牌解析出openid和令牌时间
- * 测试场景：
- * 1. 解析有效 token
- * 2. 解析过期 token
- * 3. 解析伪造密钥 token
- * 4. 解析空字符串
- */
+// func ParseUserToken(tokenString string) (*UserClaims, error) 测试
+//
+// 函数功能：根据令牌解析出openid和令牌时间
+//
+// 测试场景：
+// 1. 解析有效 token
+// 2. 解析过期 token
+// 3. 解析伪造密钥 token
+// 4. 解析空字符串
 func TestParseUserToken(t *testing.T) {
 	InitUserJWT("test-user-secret-parse-123", 24)
 
@@ -88,11 +90,12 @@ func TestParseUserToken(t *testing.T) {
 	}
 }
 
-/* func InitUserJWT(jwtSecret string, expireHours int)
- * func GenerateUserToken(openid string) (string, error)
- * 测试上面两个函数联合效果：在时间 <= 0 的情况下有没有兜底措施
- * 保障过期时间一定晚于创建时间
- */
+// func InitUserJWT(jwtSecret string, expireHours int)
+//
+// func GenerateUserToken(openid string) (string, error)
+//
+// 测试上面两个函数联合效果：在时间 <= 0 的情况下有没有兜底措施，
+// 保障过期时间一定晚于创建时间
 func TestGenerateUserToken_Expiration(t *testing.T) {
 	InitUserJWT("test-user-expire-secret", 0)
 
@@ -105,10 +108,12 @@ func TestGenerateUserToken_Expiration(t *testing.T) {
 	assert.True(t, claims.ExpiresAt.Time.After(time.Now()), "token 过期时间应在将来")
 }
 
-/* func GenerateAdminToken(adminID uint, username string, role int)(string, error) 测试
- * 函数功能：生成管理员鉴权令牌
- * 测试场景：1. 正常生成管理员令牌，并解析出id,姓名，role
- */
+// func GenerateAdminToken(adminID uint, username string, role int)(string, error) 测试
+//
+// 函数功能：生成管理员鉴权令牌
+//
+// 测试场景：
+// 1. 正常生成管理员令牌，并解析出id,姓名，role
 
 func TestGenerateAdminToken(t *testing.T) {
 	InitAdminJWT("test-admin-secret-key-456", 24)
@@ -127,14 +132,15 @@ func TestGenerateAdminToken(t *testing.T) {
 	})
 }
 
-/* func ParseAdminToken(tokenString string) (*AdminClaims, error)
- * 函数功能：解析管理员令牌，获取信息
- * 测试场景：
- * 1. 解析有效令牌
- * 2. 解析过期令牌
- * 3. 解析伪造密钥的令牌 TODO
- * 4. 解析空字符串
- */
+// func ParseAdminToken(tokenString string) (*AdminClaims, error)
+//
+// 函数功能：解析管理员令牌，获取信息
+//
+// 测试场景：
+// 1. 解析有效令牌
+// 2. 解析过期令牌
+// 3. 解析伪造密钥的令牌 TODO
+// 4. 解析空字符串
 func TestParseAdminToken(t *testing.T) {
 	InitAdminJWT("test-admin-secret-parse-789", 24)
 
@@ -186,11 +192,11 @@ func TestParseAdminToken(t *testing.T) {
 	}
 }
 
-/* 测试admin token 和 user token 有没有区分开来，
- * 防止跨类型攻击
- * 测试场景：
- * 1. admin token parser 解析 user token 会失败
- */
+// 测试admin token 和 user token 有没有区分开来，
+// 防止跨类型攻击
+//
+// 测试场景：
+// 1. admin token parser 解析 user token 会失败
 func TestCrossTypeAttack_UserKeyParseAdminToken(t *testing.T) {
 	InitUserJWT("user-secret-cross", 24)
 	InitAdminJWT("admin-secret-cross", 24)
@@ -204,11 +210,11 @@ func TestCrossTypeAttack_UserKeyParseAdminToken(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-/* 测试admin token 和 user token 有没有区分开来，
- * 防止跨类型攻击
- * 测试场景：
- * 1. user token parser 解析 admin token 会失败
- */
+// 测试admin token 和 user token 有没有区分开来，
+// 防止跨类型攻击
+//
+// 测试场景：
+// 1. user token parser 解析 admin token 会失败
 func TestCrossTypeAttack_AdminKeyParseUserToken(t *testing.T) {
 	InitUserJWT("user-secret-cross-2", 24)
 	InitAdminJWT("admin-secret-cross-2", 24)
@@ -222,13 +228,14 @@ func TestCrossTypeAttack_AdminKeyParseUserToken(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-/* func InitUserJWT(jwtSecret string, expireHours int)
- * 函数功能：初始化密钥和过期时间
- * 测试场景：
- * 1. 重复调用，保持第一次调用结果
- * 2. 当密钥为空时，使用默认密钥
- * 3. 输入 expireHours <= 0 时，使用默认过期时间，且过期时间要合理
- */
+// func InitUserJWT(jwtSecret string, expireHours int)
+//
+// 函数功能：初始化密钥和过期时间
+//
+// 测试场景：
+// 1. 重复调用，保持第一次调用结果
+// 2. 当密钥为空时，使用默认密钥
+// 3. 输入 expireHours <= 0 时，使用默认过期时间，且过期时间要合理
 func TestInitUserJWT_SyncOnce(t *testing.T) {
 	// 第一次初始化
 	InitUserJWT("first-secret-key", 12)

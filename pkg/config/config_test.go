@@ -9,13 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-/* 测试 func GetEnv(key, defaultValue string) string
- * 函数功能：通过 key 获取环境变量，如果不存在环境变量返回 defaultValue
- * 测试场景：
- * 1. 环境变量存在时返回其值
- * 2. 环境变量不存在时返回默认值
- * 3. 环境变量为空字符串时返回默认值
- */
+// 测试 func GetEnv(key, defaultValue string) string
+//
+// 函数功能：通过 key 获取环境变量，如果不存在环境变量返回 defaultValue
+//
+// 测试场景：
+// 1. 环境变量存在时返回其值
+// 2. 环境变量不存在时返回默认值
+// 3. 环境变量为空字符串时返回默认值
 func TestGetEnv(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -68,15 +69,16 @@ func TestGetEnv(t *testing.T) {
 	}
 }
 
-/* func LoadYAMLFile(path string, cfg any) 函数测试
- * 函数功能：从指定路径中加载 YAML 文件配置到任意结构体中
- * 测试场景：
- * 1. 正常解析 YAML 文件
- * 2. 空 YAML 文件，应该返回结构体的零值
- * 3. 部分字段的 TAML 文件，未定义的字段应该为零值
- * 4. 路径错误，应该返回 error
- * 5. 错误的 YAML 格式，应该返回 error
- */
+// func LoadYAMLFile(path string, cfg any) 函数测试
+//
+// 函数功能：从指定路径中加载 YAML 文件配置到任意结构体中
+//
+// 测试场景：
+// 1. 正常解析 YAML 文件
+// 2. 空 YAML 文件，应该返回结构体的零值
+// 3. 部分字段的 TAML 文件，未定义的字段应该为零值
+// 4. 路径错误，应该返回 error
+// 5. 错误的 YAML 格式，应该返回 error
 
 type testConfig struct {
 	Server   testServerConfig   `yaml:"server"`
