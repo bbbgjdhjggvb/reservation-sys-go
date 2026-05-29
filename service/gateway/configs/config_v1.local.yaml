@@ -18,8 +18,8 @@ wechat:
     myorders: "http://localhost:8081/myorders"
 
 mysql:
-  host: "localhost"
-  port: 3307
+  host: "mysql"
+  port: 3306
   user: "res_user"
   password: "xSIn34sU7qQl31kQ3TVfcQ=="
   dbname: "home_xy"
@@ -27,8 +27,8 @@ mysql:
   max_open_conns: 100
 
 redis:
-  host: "localhost"
-  port: 6380
+  host: "redis"
+  port: 6379
   password: ""
   db: 0
 

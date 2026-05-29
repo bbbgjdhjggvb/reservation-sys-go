@@ -9,8 +9,8 @@ server:
     - "*"
 
 mysql:
-  host: "localhost"
-  port: 3307
+  host: "mysql"
+  port: 3306
   user: "res_user"
   password: "xSIn34sU7qQl31kQ3TVfcQ=="
   dbname: "home_res"
@@ -20,3 +20,26 @@ mysql:
 jwt:
   secret: "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
   expire_time: 24
+
+redis:
+  host: "redis"
+  port: 6379
+  password: ""
+  db: 0
+
+ratelimit:
+  - handler_name: "submit"
+    dimension: "user"
+    window_sec: 60
+    max_requests: 3
+    fail_open: true
+  - handler_name: "submit"
+    dimension: "ip"
+    window_sec: 60
+    max_requests: 10
+    fail_open: true
+  - handler_name: "cancel"
+    dimension: "user"
+    window_sec: 60
+    max_requests: 5
+    fail_open: true
