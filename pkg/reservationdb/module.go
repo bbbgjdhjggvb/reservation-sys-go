@@ -14,12 +14,19 @@ var repo Repository
 //   - db: 已初始化的 GORM 数据库连接（指向 home_res 库）
 //
 // 注意: 必须在 InitModule 之前调用 platform.InitDB 完成数据库连接
-func InitModule(db *gorm.DB) {
-	platform.AutoMigrate(db, &ReservationOrder{})
-	platform.AutoMigrate(db, &ReservationSlot{})
-	platform.AutoMigrate(db, &ReviewRecord{})
+func InitModule(db *gorm.DB) error {
+	if err := platform.AutoMigrate(db, &ReservationOrder{}); err != nil {
+		return err
+	}
+	if err := platform.AutoMigrate(db, &ReservationSlot{}); err != nil {
+		return err
+	}
+	if err := platform.AutoMigrate(db, &ReviewRecord{}); err != nil {
+		return err
+	}
 
 	repo = NewRepository(db)
+	return nil
 }
 
 // GetRepository 获取仓库实例。
