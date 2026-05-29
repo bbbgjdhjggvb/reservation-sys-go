@@ -40,7 +40,7 @@ func TestAuthMiddleware(t *testing.T) {
 		wantMsg    string
 	}{
 		{
-			name: "no_header",
+			name:     "no_header",
 			wantCode: 401,
 			wantMsg:  "未授权",
 		},
@@ -80,7 +80,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 			assert.Equal(t, tt.wantCode, w.Code)
 			if tt.wantMsg != "" {
-				var resp map[string]interface{}
+				var resp map[string]any
 				json.Unmarshal(w.Body.Bytes(), &resp)
 				assert.Contains(t, resp["msg"], tt.wantMsg)
 			}
