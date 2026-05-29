@@ -61,7 +61,7 @@ func TestGetOrderListHandler(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
 		r.GET("/orders", injectAdmin(1, 1), hdl.GetOrderListHandler)
 
-		orders := []*reservationdb.ReservationOrder{getOrder(1, 0)}
+		orders := []*reservationdb.ReservationOrder{getOrder(1, reservationdb.StatusPendingLevel1)}
 		mockRepo.EXPECT().ListOrders([]int(nil), 1, 20).Return(orders, int64(1), nil)
 
 		w := httptest.NewRecorder()
@@ -78,10 +78,10 @@ func TestGetOrderListHandler(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
 		r.GET("/orders", injectAdmin(1, 1), hdl.GetOrderListHandler)
 
-		mockRepo.EXPECT().ListOrders([]int{0}, 1, 20).Return(nil, int64(0), nil)
+		mockRepo.EXPECT().ListOrders([]int{reservationdb.StatusPendingLevel1}, 1, 20).Return(nil, int64(0), nil)
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/orders?status=0", nil)
+		req := httptest.NewRequest("GET", "/orders?status=1", nil)
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, 200, w.Code)
@@ -119,7 +119,7 @@ func TestGetOrderDetailHandler(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
 		r.GET("/orders/:id", injectAdmin(1, 1), hdl.GetOrderDetailHandler)
 
-		order := getOrder(1, 0)
+		order := getOrder(1, reservationdb.StatusPendingLevel1)
 		records := []reservationdb.ReviewRecord{{ID: 1, OrderID: 1, ReviewerID: 1, Comment: "通过"}}
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(order, nil)
 		mockRepo.EXPECT().FindReviewRecordsByOrderID(uint(1)).Return(records, nil)
@@ -242,7 +242,7 @@ func TestLevel2ReviewHandler(t *testing.T) {
 		r.POST("/review/level2/:id", injectAdmin(2, 2), hdl.Level2ReviewHandler)
 
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(getOrder(1, reservationdb.StatusPendingLevel2), nil)
-		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel2, reservationdb.StatusApprovedFinal).Return(nil)
+		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel2, reservationdb.StatusApproved).Return(nil)
 		mockRepo.EXPECT().CreateReviewRecord(gomock.Any()).Return(nil)
 
 		w := httptest.NewRecorder()
@@ -283,7 +283,7 @@ func TestSetPasswordHandler(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
 		r.PUT("/review/level1/:id/slots/:slotID/password", injectAdmin(1, 1), hdl.SetPasswordHandler)
 
-		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(getOrder(1, reservationdb.StatusApprovedFinal), nil)
+		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(getOrder(1, reservationdb.StatusApproved), nil)
 		mockRepo.EXPECT().SetSlotPassword(uint(10), "123456").Return(nil)
 
 		w := httptest.NewRecorder()

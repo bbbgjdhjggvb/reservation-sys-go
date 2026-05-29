@@ -80,7 +80,7 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 		Reason:            req.Reason,
 		Phone:             req.Phone,
 		TotalSlots:        len(mergedSlots),
-		Status:            reservationdb.StatusPending,
+		Status:            reservationdb.StatusPendingLevel1,
 	}
 
 	slotRecords := make([]reservationdb.ReservationSlot, len(mergedSlots))
@@ -88,7 +88,7 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 		slotRecords[i] = reservationdb.ReservationSlot{
 			StartTime: slot.StartTime,
 			EndTime:   slot.EndTime,
-			Status:    reservationdb.StatusPending,
+			Status:    reservationdb.StatusPendingLevel1,
 		}
 	}
 
@@ -185,7 +185,7 @@ func (s *ReservationService) Cancel(orderID uint, openid string) error {
 		return fmt.Errorf("无权操作此预约")
 	}
 
-	if order.Status != reservationdb.StatusPending && order.Status != reservationdb.StatusApproved {
+	if order.Status != reservationdb.StatusPendingLevel1 {
 		return fmt.Errorf("当前状态无法取消")
 	}
 

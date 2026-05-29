@@ -217,7 +217,7 @@ func TestReservationService_GetMyReservations(t *testing.T) {
 			{
 				ID:         1,
 				OpenID:     "test_openid_001",
-				Status:     reservationdb.StatusPending,
+				Status:     reservationdb.StatusPendingLevel1,
 				TotalSlots: 2,
 				Slots: []reservationdb.ReservationSlot{
 					{ID: 10, StartTime: testSlot1.StartTime, EndTime: testSlot1.EndTime},
@@ -257,7 +257,7 @@ func TestReservationService_Cancel(t *testing.T) {
 
 	t.Run("取消成功", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(&reservationdb.ReservationOrder{
-			ID: 1, OpenID: "test_001", Status: reservationdb.StatusPending,
+			ID: 1, OpenID: "test_001", Status: reservationdb.StatusPendingLevel1,
 		}, nil)
 		mockRepo.EXPECT().CancelOrder(uint(1), "test_001").Return(nil)
 
@@ -276,7 +276,7 @@ func TestReservationService_Cancel(t *testing.T) {
 
 	t.Run("无权操作他人订单", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).
-			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "other_user", Status: reservationdb.StatusPending}, nil)
+			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "other_user", Status: reservationdb.StatusPendingLevel1}, nil)
 
 		err := svc.Cancel(1, "test_001")
 		assert.Error(t, err)
@@ -480,7 +480,7 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 
 	testDate := "2026-03-25"
 	mockSlots := []reservationdb.ReservationSlot{
-		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPending},
+		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1},
 		{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved},
 	}
 

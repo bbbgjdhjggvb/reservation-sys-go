@@ -61,7 +61,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(100)).
 			Return(&reservationdb.ReservationOrder{
 				ID: 100, OrderNo: "R1234567890", OpenID: "test_openid_001",
-				Status: reservationdb.StatusPending, TotalSlots: 1,
+				Status: reservationdb.StatusPendingLevel1, TotalSlots: 1,
 				Slots: []reservationdb.ReservationSlot{{ID: 1}},
 			}, nil)
 
@@ -98,7 +98,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(200)).
 			Return(&reservationdb.ReservationOrder{
 				ID: 200, OrderNo: "R1234567890", OpenID: "test_openid_001",
-				Status: reservationdb.StatusPending, TotalSlots: 3,
+				Status: reservationdb.StatusPendingLevel1, TotalSlots: 3,
 				Slots: []reservationdb.ReservationSlot{{ID: 1}, {ID: 2}, {ID: 3}},
 			}, nil)
 
@@ -241,7 +241,7 @@ func TestReservationHandler_GetMyReservations(t *testing.T) {
 	t.Run("获取成功", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrdersByOpenID("test_openid_001").Return([]*reservationdb.ReservationOrder{
 			{
-				ID: 1, OpenID: "test_openid_001", TotalSlots: 2, Status: reservationdb.StatusPending,
+				ID: 1, OpenID: "test_openid_001", TotalSlots: 2, Status: reservationdb.StatusPendingLevel1,
 				Slots: []reservationdb.ReservationSlot{
 					{ID: 10}, {ID: 11},
 				},
@@ -272,7 +272,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 
 	t.Run("取消成功", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).
-			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "test_openid_001", Status: reservationdb.StatusPending}, nil)
+			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "test_openid_001", Status: reservationdb.StatusPendingLevel1}, nil)
 		mockRepo.EXPECT().CancelOrder(uint(1), "test_openid_001").Return(nil)
 
 		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/1", nil)
@@ -313,7 +313,7 @@ func TestReservationHandler_Cancel(t *testing.T) {
 
 	t.Run("无权操作(非本人)", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(2)).
-			Return(&reservationdb.ReservationOrder{ID: 2, OpenID: "other_openid", Status: reservationdb.StatusPending}, nil)
+			Return(&reservationdb.ReservationOrder{ID: 2, OpenID: "other_openid", Status: reservationdb.StatusPendingLevel1}, nil)
 
 		req, _ := http.NewRequest("DELETE", "/api/reservation/reservation/2", nil)
 		w := httptest.NewRecorder()

@@ -69,7 +69,7 @@ func TestReviewService_Level1Review(t *testing.T) {
 			orderID: 1, adminID: 1,
 			req: &ReviewActionReq{Action: 1},
 			mockSetup: func() {
-				mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApprovedFinal), nil)
+				mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApproved), nil)
 			},
 			wantErr: true,
 			errMsg:  "不允许一级审核",
@@ -110,7 +110,7 @@ func TestReviewService_Level2Review(t *testing.T) {
 
 	t.Run("success_approve", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusPendingLevel2), nil)
-		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel2, reservationdb.StatusApprovedFinal).Return(nil)
+		mockRepo.EXPECT().UpdateOrderStatus(uint(1), reservationdb.StatusPendingLevel2, reservationdb.StatusApproved).Return(nil)
 		mockRepo.EXPECT().CreateReviewRecord(gomock.Any()).Return(nil)
 
 		err := svc.Level2Review(2, 1, &ReviewActionReq{Action: 1, Comment: "终审通过"})
@@ -150,7 +150,7 @@ func TestReviewService_SetPassword(t *testing.T) {
 	svc := NewReviewService(mockRepo)
 
 	t.Run("success", func(t *testing.T) {
-		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApprovedFinal), nil)
+		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApproved), nil)
 		mockRepo.EXPECT().SetSlotPassword(uint(10), "123456").Return(nil)
 
 		err := svc.SetPassword(constants.RoleLevel1, 1, 10, "123456")
@@ -180,7 +180,7 @@ func TestReviewService_SetPassword(t *testing.T) {
 	})
 
 	t.Run("repo_error", func(t *testing.T) {
-		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApprovedFinal), nil)
+		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(makeTestOrder(1, reservationdb.StatusApproved), nil)
 		mockRepo.EXPECT().SetSlotPassword(uint(10), "123456").Return(errors.New("db error"))
 
 		err := svc.SetPassword(constants.RoleLevel1, 1, 10, "123456")
@@ -233,10 +233,10 @@ func TestReviewService_GetOrdersByStatuses(t *testing.T) {
 	svc := NewReviewService(mockRepo)
 
 	t.Run("success", func(t *testing.T) {
-		orders := []*reservationdb.ReservationOrder{makeTestOrder(1, 0)}
-		mockRepo.EXPECT().ListOrders([]int{0}, 1, 20).Return(orders, int64(1), nil)
+		orders := []*reservationdb.ReservationOrder{makeTestOrder(1, reservationdb.StatusPendingLevel1)}
+		mockRepo.EXPECT().ListOrders([]int{reservationdb.StatusPendingLevel1}, 1, 20).Return(orders, int64(1), nil)
 
-		o, total, err := svc.GetOrdersByStatuses([]int{0}, 1, 20)
+		o, total, err := svc.GetOrdersByStatuses([]int{reservationdb.StatusPendingLevel1}, 1, 20)
 		assert.NoError(t, err)
 		assert.Len(t, o, 1)
 		assert.Equal(t, int64(1), total)
@@ -271,7 +271,7 @@ func TestReviewService_GetAllOrders(t *testing.T) {
 	svc := NewReviewService(mockRepo)
 
 	t.Run("success", func(t *testing.T) {
-		orders := []*reservationdb.ReservationOrder{makeTestOrder(1, 0), makeTestOrder(2, 1)}
+		orders := []*reservationdb.ReservationOrder{makeTestOrder(1, reservationdb.StatusPendingLevel1), makeTestOrder(2, reservationdb.StatusApproved)}
 		mockRepo.EXPECT().ListOrders([]int(nil), 1, 20).Return(orders, int64(2), nil)
 
 		o, total, err := svc.GetAllOrders(1, 20)
@@ -295,7 +295,7 @@ func TestReviewService_GetOrderForNotify(t *testing.T) {
 	svc := NewReviewService(mockRepo)
 
 	t.Run("success", func(t *testing.T) {
-		order := makeTestOrder(1, reservationdb.StatusApprovedFinal)
+		order := makeTestOrder(1, reservationdb.StatusApproved)
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(order, nil)
 
 		o, err := svc.GetOrderForNotify(1)
