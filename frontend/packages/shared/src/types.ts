@@ -62,14 +62,13 @@ export interface SelectedSlot {
 
 // ========== Order Status ==========
 export const ORDER_STATUS_MAP: Record<number, string> = {
-  0: '待审核',
-  1: '已通过',
-  2: '已拒绝',
-  3: '已完成',
-  4: '已取消',
-  5: '审核中',
-  6: '一级审核驳回',
-  7: '二级审核驳回',
+  1: '等待一级审核',
+  2: '等待二级审核',
+  3: '一级审核拒绝',
+  4: '二级审核拒绝',
+  5: '审核通过',
+  6: '订单已经取消',
+  7: '订单已经完成',
 }
 
 // ========== Time Slot Definitions ==========
