@@ -68,9 +68,9 @@ func TestAuthMiddleware_InvalidTokenFormat(t *testing.T) {
 	})
 
 	tests := []struct {
-		name       string
-		authVal    string
-		expectMsg  string
+		name      string
+		authVal   string
+		expectMsg string
 	}{
 		{
 			name:      "无Bearer前缀",

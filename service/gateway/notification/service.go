@@ -6,8 +6,8 @@ package notification
 import (
 	"fmt"
 
-	"reservation-sys/service/gateway/auth"
 	reservationdb "reservation-sys/pkg/reservationdb"
+	"reservation-sys/service/gateway/auth"
 
 	"github.com/silenceper/wechat/v2/officialaccount"
 )

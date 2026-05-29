@@ -146,7 +146,7 @@ func RegisterReservationServiceServer(s grpc.ServiceRegistrar, srv ReservationSe
 	s.RegisterService(&ReservationService_ServiceDesc, srv)
 }
 
-func _ReservationService_GetOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ReservationService_GetOrder_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(GetOrderReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -158,13 +158,13 @@ func _ReservationService_GetOrder_Handler(srv interface{}, ctx context.Context, 
 		Server:     srv,
 		FullMethod: ReservationService_GetOrder_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ReservationServiceServer).GetOrder(ctx, req.(*GetOrderReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReservationService_ListOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ReservationService_ListOrders_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ListOrdersReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -176,13 +176,13 @@ func _ReservationService_ListOrders_Handler(srv interface{}, ctx context.Context
 		Server:     srv,
 		FullMethod: ReservationService_ListOrders_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ReservationServiceServer).ListOrders(ctx, req.(*ListOrdersReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReservationService_UpdateOrderStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ReservationService_UpdateOrderStatus_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UpdateOrderStatusReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -194,13 +194,13 @@ func _ReservationService_UpdateOrderStatus_Handler(srv interface{}, ctx context.
 		Server:     srv,
 		FullMethod: ReservationService_UpdateOrderStatus_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ReservationServiceServer).UpdateOrderStatus(ctx, req.(*UpdateOrderStatusReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReservationService_SetSlotPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ReservationService_SetSlotPassword_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(SetSlotPasswordReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func _ReservationService_SetSlotPassword_Handler(srv interface{}, ctx context.Co
 		Server:     srv,
 		FullMethod: ReservationService_SetSlotPassword_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ReservationServiceServer).SetSlotPassword(ctx, req.(*SetSlotPasswordReq))
 	}
 	return interceptor(ctx, in, info, handler)

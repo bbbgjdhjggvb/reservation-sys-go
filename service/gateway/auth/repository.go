@@ -26,7 +26,8 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 // 基于 OpenID 唯一索引，冲突时自动更新 nickname、status、last_login、updated_at。
 //
 // SQL: INSERT INTO users (openid, nickname, status, last_login, ...) VALUES (?, ?, ?, ?, ...)
-//      ON DUPLICATE KEY UPDATE nickname=VALUES(nickname), status=VALUES(status), last_login=VALUES(last_login), updated_at=VALUES(updated_at);
+//
+//	ON DUPLICATE KEY UPDATE nickname=VALUES(nickname), status=VALUES(status), last_login=VALUES(last_login), updated_at=VALUES(updated_at);
 func (r *userRepository) Upsert(user *User) error {
 	// 使用 GORM 的 OnConflict 处理 OpenID 冲突时的自动更新
 	return r.db.Clauses(clause.OnConflict{

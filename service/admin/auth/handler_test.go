@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	pb "reservation-sys/service/gateway/api/gen/account"
 	"reservation-sys/pkg/jwt"
+	pb "reservation-sys/service/gateway/api/gen/account"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
@@ -49,11 +49,11 @@ func TestLoginHandler(t *testing.T) {
 			wantMsg:  "登录成功",
 		},
 		{
-			name:     "bad_request_missing_body",
-			body:     `{`,
+			name:      "bad_request_missing_body",
+			body:      `{`,
 			mockSetup: func() {},
-			wantCode: 400,
-			wantMsg:  "参数错误",
+			wantCode:  400,
+			wantMsg:   "参数错误",
 		},
 		{
 			name: "unauthorized_bad_credentials",

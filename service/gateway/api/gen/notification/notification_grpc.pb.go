@@ -110,7 +110,7 @@ func RegisterNotificationServiceServer(s grpc.ServiceRegistrar, srv Notification
 	s.RegisterService(&NotificationService_ServiceDesc, srv)
 }
 
-func _NotificationService_SendApprovalNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _NotificationService_SendApprovalNotification_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ApprovalNotificationReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -122,13 +122,13 @@ func _NotificationService_SendApprovalNotification_Handler(srv interface{}, ctx 
 		Server:     srv,
 		FullMethod: NotificationService_SendApprovalNotification_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(NotificationServiceServer).SendApprovalNotification(ctx, req.(*ApprovalNotificationReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NotificationService_SendRejectionNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _NotificationService_SendRejectionNotification_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(RejectionNotificationReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func _NotificationService_SendRejectionNotification_Handler(srv interface{}, ctx
 		Server:     srv,
 		FullMethod: NotificationService_SendRejectionNotification_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(NotificationServiceServer).SendRejectionNotification(ctx, req.(*RejectionNotificationReq))
 	}
 	return interceptor(ctx, in, info, handler)

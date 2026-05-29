@@ -33,7 +33,9 @@ type wechatAuthConfig struct {
 
 func loadWechatConfig(path string) (appID, appSecret string) {
 	cfg := &wechatAuthConfig{}
-	baseconfig.LoadYAMLFile(path, cfg)
+	if err := baseconfig.LoadYAMLFile(path, cfg); err != nil {
+		log.Fatalf("加载微信配置失败: %v", err)
+	}
 	if cfg.Wechat.AppID == "" || cfg.Wechat.AppSecret == "" {
 		log.Fatal("配置文件中缺少 wechat.app_id 或 wechat.app_secret")
 	}

@@ -68,4 +68,3 @@ func OrderToResp(o *reservationdb.ReservationOrder, showPassword bool) *OrderRes
 		Slots:             slots,
 	}
 }
-

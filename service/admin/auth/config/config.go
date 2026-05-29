@@ -2,6 +2,8 @@
 package config
 
 import (
+	"log"
+
 	baseconfig "reservation-sys/pkg/config"
 )
 
@@ -25,7 +27,9 @@ var cfg *Config
 // Load 加载配置文件
 func Load(path string) {
 	cfg = &Config{}
-	baseconfig.LoadYAMLFile(path, cfg)
+	if err := baseconfig.LoadYAMLFile(path, cfg); err != nil {
+		log.Fatalf("[admin/auth/config] 加载配置失败: %v", err)
+	}
 }
 
 // Get 获取配置实例

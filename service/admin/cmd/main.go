@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/pkg/grpc"
 	"reservation-sys/pkg/jwt"
 	"reservation-sys/pkg/platform"
+	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/service/admin/auth"
 	adminconfig "reservation-sys/service/admin/config"
 	"reservation-sys/service/admin/review"
@@ -40,17 +40,25 @@ func main() {
 	gin.SetMode(cfg.Server.Mode)
 
 	// 初始化预约数据库（home_res：reservation_orders, reservation_slots, review_records）
-	db := platform.InitDB(adminconfig.GetMySQL())
+	db, err := platform.InitDB(adminconfig.GetMySQL())
+	if err != nil {
+		log.Fatalf("[admin] 数据库初始化失败: %v", err)
+	}
 
 	// 初始化共享预约数据库模块
-	reservationdb.InitModule(db)
+	if err := reservationdb.InitModule(db); err != nil {
+		log.Fatalf("[admin] 预约数据库模块初始化失败: %v", err)
+	}
 
 	// 初始化 JWT 配置（本地生成 admin token）
 	jwtCfg := adminconfig.GetJWT()
 	jwt.InitAdminJWT(jwtCfg.Secret, jwtCfg.ExpireTime)
 
 	// ========== 连接 Gateway gRPC 服务（通知 + 账号验证） ==========
-	gatewayConn := grpc.Connect(cfg.GRPC.GatewayAddr)
+	gatewayConn, err := grpc.Connect(cfg.GRPC.GatewayAddr)
+	if err != nil {
+		log.Fatalf("[admin] gRPC 连接失败: %v", err)
+	}
 
 	// 账号验证客户端
 	accountClient := pb.NewAccountServiceClient(gatewayConn)

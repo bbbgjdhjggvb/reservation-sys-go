@@ -2,6 +2,8 @@
 package config
 
 import (
+	"log"
+
 	baseconfig "reservation-sys/pkg/config"
 )
 
@@ -16,13 +18,13 @@ type Config struct {
 
 // WechatConfig 微信相关配置
 type WechatConfig struct {
-	AppID            string            `yaml:"app_id"`
-	AppSecret        string            `yaml:"app_secret"`
-	Token            string            `yaml:"token"`
-	TemplateID       string            `yaml:"template_id"`      // 审核通知模板消息ID
-	MenuConfigPath   string            `yaml:"menu_config_path"` // 菜单配置文件路径
-	DefaultRedirect  string            `yaml:"default_redirect"` // OAuth 回调默认重定向地址（state 未匹配时使用）
-	RedirectURLs     map[string]string `yaml:"redirect_urls"`    // state -> 重定向URL 映射表
+	AppID           string            `yaml:"app_id"`
+	AppSecret       string            `yaml:"app_secret"`
+	Token           string            `yaml:"token"`
+	TemplateID      string            `yaml:"template_id"`      // 审核通知模板消息ID
+	MenuConfigPath  string            `yaml:"menu_config_path"` // 菜单配置文件路径
+	DefaultRedirect string            `yaml:"default_redirect"` // OAuth 回调默认重定向地址（state 未匹配时使用）
+	RedirectURLs    map[string]string `yaml:"redirect_urls"`    // state -> 重定向URL 映射表
 }
 
 var cfg *Config
@@ -30,7 +32,9 @@ var cfg *Config
 // Load 加载配置文件
 func Load(path string) {
 	cfg = &Config{}
-	baseconfig.LoadYAMLFile(path, cfg)
+	if err := baseconfig.LoadYAMLFile(path, cfg); err != nil {
+		log.Fatalf("[gateway/auth/config] 加载配置失败: %v", err)
+	}
 }
 
 // Get 获取配置实例

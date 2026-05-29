@@ -37,7 +37,7 @@ func (m *MockAccountServiceClient) EXPECT() *MockAccountServiceClientMockRecorde
 // VerifyAdmin mocks base method.
 func (m *MockAccountServiceClient) VerifyAdmin(ctx context.Context, in *pb.VerifyAdminReq, opts ...grpc.CallOption) (*pb.VerifyAdminResp, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
+	varargs := []any{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -48,8 +48,8 @@ func (m *MockAccountServiceClient) VerifyAdmin(ctx context.Context, in *pb.Verif
 }
 
 // VerifyAdmin indicates an expected call of VerifyAdmin.
-func (mr *MockAccountServiceClientMockRecorder) VerifyAdmin(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockAccountServiceClientMockRecorder) VerifyAdmin(ctx, in any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
+	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyAdmin", reflect.TypeOf((*MockAccountServiceClient)(nil).VerifyAdmin), varargs...)
 }

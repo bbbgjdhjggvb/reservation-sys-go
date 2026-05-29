@@ -94,7 +94,7 @@ func RegisterAccountServiceServer(s grpc.ServiceRegistrar, srv AccountServiceSer
 	s.RegisterService(&AccountService_ServiceDesc, srv)
 }
 
-func _AccountService_VerifyAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AccountService_VerifyAdmin_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(VerifyAdminReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func _AccountService_VerifyAdmin_Handler(srv interface{}, ctx context.Context, d
 		Server:     srv,
 		FullMethod: AccountService_VerifyAdmin_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AccountServiceServer).VerifyAdmin(ctx, req.(*VerifyAdminReq))
 	}
 	return interceptor(ctx, in, info, handler)

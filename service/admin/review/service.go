@@ -44,10 +44,12 @@ func NewReviewService(repo reservationdb.Repository) *ReviewService {
 func (s *ReviewService) Level1Review(adminID uint, orderID uint, req *ReviewActionReq) error {
 	order, err := s.repo.FindOrderByID(orderID)
 	if err != nil {
+		log.Printf("[service/admin/review/Level1Review]: 订单id %d", orderID)
 		return fmt.Errorf("订单不存在")
 	}
 
 	if order.Status != reservationdb.StatusPendingLevel1 {
+		log.Printf("[service/admin/review/Level1Review]: 订单状态 %d", order.Status)
 		return fmt.Errorf("当前订单状态不允许一级审核")
 	}
 
@@ -103,7 +105,7 @@ func (s *ReviewService) Level2Review(adminID uint, orderID uint, req *ReviewActi
 
 	var targetStatus int
 	if req.Action == 1 {
-		targetStatus = reservationdb.StatusApprovedFinal
+		targetStatus = reservationdb.StatusApproved
 	} else {
 		targetStatus = reservationdb.StatusRejectedLevel2
 	}
@@ -151,7 +153,7 @@ func (s *ReviewService) SetPassword(adminRole int, orderID uint, slotID uint, pa
 		return fmt.Errorf("订单不存在")
 	}
 
-	if order.Status != reservationdb.StatusApprovedFinal {
+	if order.Status != reservationdb.StatusApproved {
 		return fmt.Errorf("仅审核通过的订单可设置门锁密码")
 	}
 

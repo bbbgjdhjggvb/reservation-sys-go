@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"reservation-sys/pkg/constants"
-	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/pkg/jwt"
-	pb "reservation-sys/service/gateway/api/gen/notification"
+	reservationdb "reservation-sys/pkg/reservationdb"
 	"reservation-sys/service/admin/auth"
+	pb "reservation-sys/service/gateway/api/gen/notification"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"

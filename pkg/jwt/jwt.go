@@ -14,12 +14,13 @@ import (
 
 var (
 	userSecret     []byte
-	userExpireTime int = 24 // 默认过期时间（小时）
-	userSecretOnce sync.Once
+	userExpireTime int       = 24 // 默认过期时间（小时）
+	userSecretOnce sync.Once      // 保证只进行一次初始化
 )
 
 // InitUserJWT 初始化用户 JWT 配置（各模块启动时调用）
 func InitUserJWT(jwtSecret string, expireHours int) {
+	//sync.Once 可以保证代码只执行一次
 	userSecretOnce.Do(func() {
 		if jwtSecret != "" {
 			userSecret = []byte(jwtSecret)
@@ -129,7 +130,7 @@ func GenerateAdminToken(adminID uint, username string, role int) (string, error)
 
 // ParseAdminToken 解析并验证管理员 JWT Token
 func ParseAdminToken(tokenString string) (*AdminClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &AdminClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &AdminClaims{}, func(token *jwt.Token) (any, error) {
 		return adminSecret, nil
 	})
 

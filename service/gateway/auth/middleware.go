@@ -44,8 +44,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims, err := jwt.ParseUserToken(parts[1])
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":  401,
-				"msg":   fmt.Sprintf("Token 无效或已过期: %v", err),
+				"code": 401,
+				"msg":  fmt.Sprintf("Token 无效或已过期: %v", err),
 			})
 			log.Printf("[info][auth][middleware]: Token无效或已过期: token=%v, err=%v", parts[1], err)
 			c.Abort()

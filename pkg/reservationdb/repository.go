@@ -64,10 +64,10 @@ type Repository interface {
 	//   - error: 状态不匹配时返回 "订单状态不匹配，无法执行此操作"
 	UpdateOrderStatus(orderID uint, fromStatus, toStatus int) error
 
-	// CancelOrder 用户取消订单（事务内同时更新订单和时段状态为已取消）。
+	// CancelOrder 用户取消订单（事务内同时更新订单和时段状态为已取消，仅允许从等待一级审核状态取消）。
 	// SQL: BEGIN;
-	//      UPDATE reservation_orders SET status = 4 WHERE id = ? AND open_id = ? AND status IN (0, 1);
-	//      UPDATE reservation_slots SET status = 4 WHERE order_id = ? AND status IN (0, 1);
+	//      UPDATE reservation_orders SET status = 6 WHERE id = ? AND open_id = ? AND status = 1;
+	//      UPDATE reservation_slots SET status = 6 WHERE order_id = ? AND status = 1;
 	//      COMMIT;
 	// 参数:
 	//   - orderID: 订单ID
@@ -79,7 +79,7 @@ type Repository interface {
 	// --- 时段操作 ---
 
 	// FindSlotsByTimeRange 查询指定时间范围内有交集的已占用时段。
-	// SQL: SELECT * FROM reservation_slots WHERE status IN (0, 1) AND start_time < ? AND end_time > ?;
+	// SQL: SELECT * FROM reservation_slots WHERE status IN (1, 2, 5) AND start_time < ? AND end_time > ?;
 	// 参数:
 	//   - start: 范围起始时间
 	//   - end: 范围结束时间
@@ -97,7 +97,7 @@ type Repository interface {
 	UpdateSlotStatus(slotID uint, status int) error
 
 	// SetSlotPassword 设置已通过时段的门锁密码。
-	// SQL: UPDATE reservation_slots SET password = ? WHERE id = ? AND status = 1;
+	// SQL: UPDATE reservation_slots SET password = ? WHERE id = ? AND status = 5;
 	// 参数:
 	//   - slotID: 时段主键ID
 	//   - password: 门锁密码（明文，最大20字符）
@@ -153,19 +153,23 @@ func NewRepository(db *gorm.DB) Repository {
 // SQL:
 //
 //	BEGIN;
-//	SELECT COUNT(*) FROM reservation_slots WHERE status IN (0,1) AND start_time < ? AND end_time > ? FOR UPDATE;
+//	SELECT COUNT(*) FROM reservation_slots WHERE status IN (1,2,5) AND start_time < ? AND end_time > ? FOR UPDATE;
 //	INSERT INTO reservation_orders (...) VALUES (...);
 //	INSERT INTO reservation_slots (order_id, ...) VALUES (?, ...), (?, ...), ...;
 //	COMMIT;
 func (r *repository) CreateOrderWithLock(order *ReservationOrder, slots []ReservationSlot) error {
+	// r.db.Transaction 开启事务
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for i, slot := range slots {
 			var count int64
 			err := tx.Model(&ReservationSlot{}).
-				Where("status IN ?", []int{StatusPending, StatusApproved}).
+				// 处于待一级管理员审核，待二级管理员审核
+				Where("status IN ?", []int{StatusPendingLevel1, StatusPendingLevel2, StatusApproved}).
+				// 区间[slot.EndTime, slot.StartTime] 不能和区间[start_time, end_time] 有重合
 				Where("start_time < ? AND end_time > ?", slot.EndTime, slot.StartTime).
 				Clauses(clause.Locking{Strength: "UPDATE"}).
 				Count(&count).Error
+			// 系统错误，需要解决
 			if err != nil {
 				return fmt.Errorf("检测第%d个时段冲突失败: %w", i+1, err)
 			}
@@ -178,6 +182,10 @@ func (r *repository) CreateOrderWithLock(order *ReservationOrder, slots []Reserv
 			return fmt.Errorf("创建订单失败: %w", err)
 		}
 
+		// 将 reservation_orders 的 order_id 字段传入 slots 数组中。
+		// 不使用 tx.Model(&order).Association("Slots").Append(&slots)。
+		// 因为上面这条语句会导致每有一个记录就执行一个插入语句,
+		// 下面的语句是一个 insert 批量插入。
 		for i := range slots {
 			slots[i].OrderID = order.ID
 		}
@@ -194,7 +202,8 @@ func (r *repository) CreateOrderWithLock(order *ReservationOrder, slots []Reserv
 // FindOrderByID 根据订单ID查询（预加载时段）。
 //
 // SQL: SELECT * FROM reservation_orders WHERE id = ?;
-//      SELECT * FROM reservation_slots WHERE order_id = ?;
+//
+//	SELECT * FROM reservation_slots WHERE order_id = ?;
 //
 // 参数:
 //   - id: 订单主键ID
@@ -204,6 +213,8 @@ func (r *repository) CreateOrderWithLock(order *ReservationOrder, slots []Reserv
 //   - error: 未找到时返回 gorm.ErrRecordNotFound
 func (r *repository) FindOrderByID(id uint) (*ReservationOrder, error) {
 	var order ReservationOrder
+
+	// db.Preload 的作用是在查询主表的同时，也对关联的子表进行查询，并填充到字段 Slots[] 中
 	err := r.db.Preload("Slots").First(&order, id).Error
 	if err != nil {
 		return nil, err
@@ -214,7 +225,8 @@ func (r *repository) FindOrderByID(id uint) (*ReservationOrder, error) {
 // FindOrdersByOpenID 根据用户 openid 查询预约列表（预加载时段，按创建时间倒序）。
 //
 // SQL: SELECT * FROM reservation_orders WHERE open_id = ? ORDER BY created_at DESC;
-//      SELECT * FROM reservation_slots WHERE order_id IN (?);
+//
+//	SELECT * FROM reservation_slots WHERE order_id IN (?);
 //
 // 参数:
 //   - openid: 微信用户唯一标识
@@ -224,6 +236,7 @@ func (r *repository) FindOrderByID(id uint) (*ReservationOrder, error) {
 //   - error: 查询失败时返回数据库错误
 func (r *repository) FindOrdersByOpenID(openid string) ([]*ReservationOrder, error) {
 	var orders []*ReservationOrder
+	// Where 等限制语句作用在 reservation_order 表上
 	err := r.db.Preload("Slots").
 		Where("open_id = ?", openid).
 		Order("created_at desc").
@@ -267,6 +280,9 @@ func (r *repository) ListOrders(statuses []int, page, pageSize int) ([]*Reservat
 	query.Count(&total)
 
 	err := r.db.Preload("Slots").
+		// Scope 中文翻译为 “范围”。
+		// 在 GORM 中，被称为作用域，它接收一个闭包函数，起到根据不同条件进行动态筛选的作用。
+		// 如果 statues 里面有东西，就根据statues进行筛选，如果没有就跳过。
 		Scopes(func(db *gorm.DB) *gorm.DB {
 			if len(statuses) > 0 {
 				return db.Where("status IN ?", statuses)
@@ -304,6 +320,7 @@ func (r *repository) ListOrders(statuses []int, page, pageSize int) ([]*Reservat
 //   - error: 状态不匹配时返回 "订单状态不匹配，无法执行此操作"
 func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) error {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// UPDATE 是一个读后写操作，MySQL 的 InnoDB 会在执行 UPDATE 时加上行锁
 		result := tx.Model(&ReservationOrder{}).
 			Where("id = ? AND status = ?", orderID, fromStatus).
 			Update("status", toStatus)
@@ -311,6 +328,7 @@ func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) e
 		if result.Error != nil {
 			return result.Error
 		}
+
 		if result.RowsAffected == 0 {
 			return gorm.ErrRecordNotFound
 		}
@@ -330,13 +348,13 @@ func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) e
 	return nil
 }
 
-// CancelOrder 原子化取消订单（事务内同时更新订单和时段状态）。
+// CancelOrder 取消订单（事务内同时更新订单和时段状态，仅允许从等待一级审核状态取消）。
 //
 // SQL:
 //
 //	BEGIN;
-//	UPDATE reservation_orders SET status = 4, updated_at = NOW() WHERE id = ? AND open_id = ? AND status IN (0, 1);
-//	UPDATE reservation_slots SET status = 4, updated_at = NOW() WHERE order_id = ? AND status IN (0, 1);
+//	UPDATE reservation_orders SET status = 6, updated_at = NOW() WHERE id = ? AND open_id = ? AND status = 1;
+//	UPDATE reservation_slots SET status = 6, updated_at = NOW() WHERE order_id = ? AND status = 1;
 //	COMMIT;
 //
 // 参数:
@@ -348,8 +366,8 @@ func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) e
 func (r *repository) CancelOrder(orderID uint, openid string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&ReservationOrder{}).
-			Where("id = ? AND open_id = ? AND status IN ?",
-				orderID, openid, []int{StatusPending, StatusApproved}).
+			Where("id = ? AND open_id = ? AND status = ?",
+				orderID, openid, StatusPendingLevel1).
 			Update("status", StatusCancelled)
 
 		if result.Error != nil {
@@ -360,7 +378,7 @@ func (r *repository) CancelOrder(orderID uint, openid string) error {
 		}
 
 		slotResult := tx.Model(&ReservationSlot{}).
-			Where("order_id = ? AND status IN ?", orderID, []int{StatusPending, StatusApproved}).
+			Where("order_id = ? AND status = ?", orderID, StatusPendingLevel1).
 			Update("status", StatusCancelled)
 
 		if slotResult.Error != nil {
@@ -388,7 +406,7 @@ func (r *repository) CancelOrder(orderID uint, openid string) error {
 //   - error: 查询失败时返回数据库错误
 func (r *repository) FindSlotsByTimeRange(start, end time.Time) ([]ReservationSlot, error) {
 	var slots []ReservationSlot
-	err := r.db.Where("status IN ?", []int{StatusPending, StatusApproved}).
+	err := r.db.Where("status IN ?", []int{StatusPendingLevel1, StatusPendingLevel2, StatusApproved}).
 		Where("start_time < ? AND end_time > ?", end, start).
 		Find(&slots).Error
 	return slots, err
@@ -410,7 +428,7 @@ func (r *repository) UpdateSlotStatus(slotID uint, status int) error {
 
 // SetSlotPassword 设置已通过时段的门锁密码。
 //
-// SQL: UPDATE reservation_slots SET password = ?, updated_at = NOW() WHERE id = ? AND status = 1;
+// SQL: UPDATE reservation_slots SET password = ?, updated_at = NOW() WHERE id = ? AND status = 5;
 //
 // 参数:
 //   - slotID: 时段主键ID

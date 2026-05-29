@@ -67,15 +67,15 @@ func TestReservationService_Submit(t *testing.T) {
 		{
 			name:   "正常提交单个时段",
 			openid: "test_openid_001",
-			slots: []ParsedSlot{testSlot1},
-			req:   req,
+			slots:  []ParsedSlot{testSlot1},
+			req:    req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *reservationdb.ReservationOrder, slots []reservationdb.ReservationSlot) {
-						order.ID = 100
-						assert.Equal(t, 1, len(slots))
-					})
+					order.ID = 100
+					assert.Equal(t, 1, len(slots))
+				})
 			},
 			wantErr: false,
 		},
@@ -95,18 +95,18 @@ func TestReservationService_Submit(t *testing.T) {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *reservationdb.ReservationOrder, slots []reservationdb.ReservationSlot) {
-						order.ID = 101
-						assert.Equal(t, 3, len(slots))
-						assert.Equal(t, 3, order.TotalSlots)
-					})
+					order.ID = 101
+					assert.Equal(t, 3, len(slots))
+					assert.Equal(t, 3, order.TotalSlots)
+				})
 			},
 			wantErr: false,
 		},
 		{
 			name:   "第1个时段已被占用(原子检测)",
 			openid: "test_openid_001",
-			slots: []ParsedSlot{testSlot1},
-			req:   req,
+			slots:  []ParsedSlot{testSlot1},
+			req:    req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
@@ -118,8 +118,8 @@ func TestReservationService_Submit(t *testing.T) {
 		{
 			name:   "第2个时段已被占用(多时段场景，原子检测)",
 			openid: "test_openid_001",
-			slots: []ParsedSlot{testSlot1, testSlot2},
-			req:   req,
+			slots:  []ParsedSlot{testSlot1, testSlot2},
+			req:    req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
@@ -131,8 +131,8 @@ func TestReservationService_Submit(t *testing.T) {
 		{
 			name:   "创建订单失败(DB错误)",
 			openid: "test_openid_001",
-			slots: []ParsedSlot{testSlot1},
-			req:   req,
+			slots:  []ParsedSlot{testSlot1},
+			req:    req,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
@@ -152,12 +152,12 @@ func TestReservationService_Submit(t *testing.T) {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *reservationdb.ReservationOrder, slots []reservationdb.ReservationSlot) {
-						order.ID = 102
-						assert.Equal(t, 1, len(slots), "合并后应只有1个slot记录")
-						assert.Equal(t, mustTime("2026-03-25 08:00:00"), slots[0].StartTime)
-						assert.Equal(t, mustTime("2026-03-25 12:00:00"), slots[0].EndTime)
-						assert.Equal(t, 1, order.TotalSlots, "TotalSlots应为合并后的数量")
-					})
+					order.ID = 102
+					assert.Equal(t, 1, len(slots), "合并后应只有1个slot记录")
+					assert.Equal(t, mustTime("2026-03-25 08:00:00"), slots[0].StartTime)
+					assert.Equal(t, mustTime("2026-03-25 12:00:00"), slots[0].EndTime)
+					assert.Equal(t, 1, order.TotalSlots, "TotalSlots应为合并后的数量")
+				})
 			},
 			wantErr: false,
 		},
@@ -172,10 +172,10 @@ func TestReservationService_Submit(t *testing.T) {
 				mockRepo.EXPECT().
 					CreateOrderWithLock(gomock.Any(), gomock.Any()).
 					Return(nil).Do(func(order *reservationdb.ReservationOrder, slots []reservationdb.ReservationSlot) {
-						order.ID = 103
-						assert.Equal(t, 2, len(slots), "合并后应只有2个slot记录")
-						assert.Equal(t, 2, order.TotalSlots)
-					})
+					order.ID = 103
+					assert.Equal(t, 2, len(slots), "合并后应只有2个slot记录")
+					assert.Equal(t, 2, order.TotalSlots)
+				})
 			},
 			wantErr: false,
 		},
@@ -215,9 +215,9 @@ func TestReservationService_GetMyReservations(t *testing.T) {
 	t.Run("获取用户订单列表成功", func(t *testing.T) {
 		expectedOrders := []*reservationdb.ReservationOrder{
 			{
-				ID:        1,
-				OpenID:    "test_openid_001",
-				Status:    reservationdb.StatusPending,
+				ID:         1,
+				OpenID:     "test_openid_001",
+				Status:     reservationdb.StatusPendingLevel1,
 				TotalSlots: 2,
 				Slots: []reservationdb.ReservationSlot{
 					{ID: 10, StartTime: testSlot1.StartTime, EndTime: testSlot1.EndTime},
@@ -257,7 +257,7 @@ func TestReservationService_Cancel(t *testing.T) {
 
 	t.Run("取消成功", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).Return(&reservationdb.ReservationOrder{
-			ID: 1, OpenID: "test_001", Status: reservationdb.StatusPending,
+			ID: 1, OpenID: "test_001", Status: reservationdb.StatusPendingLevel1,
 		}, nil)
 		mockRepo.EXPECT().CancelOrder(uint(1), "test_001").Return(nil)
 
@@ -276,7 +276,7 @@ func TestReservationService_Cancel(t *testing.T) {
 
 	t.Run("无权操作他人订单", func(t *testing.T) {
 		mockRepo.EXPECT().FindOrderByID(uint(1)).
-			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "other_user", Status: reservationdb.StatusPending}, nil)
+			Return(&reservationdb.ReservationOrder{ID: 1, OpenID: "other_user", Status: reservationdb.StatusPendingLevel1}, nil)
 
 		err := svc.Cancel(1, "test_001")
 		assert.Error(t, err)
@@ -319,8 +319,8 @@ func TestMergeContinuousSlots(t *testing.T) {
 		{
 			name: "两个连续时段合并为一个",
 			input: []ParsedSlot{
-				testSlot1,                           // 08:00-10:00
-				testSlot1Continuous,                 // 10:00-12:00
+				testSlot1,           // 08:00-10:00
+				testSlot1Continuous, // 10:00-12:00
 			},
 			expected: []ParsedSlot{
 				{StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 12:00:00")},
@@ -329,9 +329,9 @@ func TestMergeContinuousSlots(t *testing.T) {
 		{
 			name: "三个时段前两个连续，合并为两个",
 			input: []ParsedSlot{
-				testSlot1,                           // 08:00-10:00
-				testSlot1Continuous,                 // 10:00-12:00
-				testSlot2,                           // 13:00-15:00 (不连续)
+				testSlot1,           // 08:00-10:00
+				testSlot1Continuous, // 10:00-12:00
+				testSlot2,           // 13:00-15:00 (不连续)
 			},
 			expected: []ParsedSlot{
 				{StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 12:00:00")},
@@ -352,8 +352,8 @@ func TestMergeContinuousSlots(t *testing.T) {
 		{
 			name: "乱序输入后自动排序再合并",
 			input: []ParsedSlot{
-				testSlot1Continuous,                 // 10:00-12:00
-				testSlot1,                           // 08:00-10:00 (更早)
+				testSlot1Continuous, // 10:00-12:00
+				testSlot1,           // 08:00-10:00 (更早)
 			},
 			expected: []ParsedSlot{
 				{StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 12:00:00")},
@@ -480,7 +480,7 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 
 	testDate := "2026-03-25"
 	mockSlots := []reservationdb.ReservationSlot{
-		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPending},
+		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1},
 		{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved},
 	}
 
