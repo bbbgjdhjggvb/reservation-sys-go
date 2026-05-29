@@ -3,6 +3,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -42,18 +43,28 @@ type JwtConfig struct {
 	ExpireTime int    `yaml:"expire_time"`
 }
 
+// RateLimitConfig 限流配置
+type RateLimitConfig struct {
+	HandlerName string `yaml:"handler_name"`
+	Dimension   string `yaml:"dimension"`
+	WindowSec   int    `yaml:"window_sec"`
+	MaxRequests int    `yaml:"max_requests"`
+	FailOpen    bool   `yaml:"fail_open"`
+}
+
 // LoadYAMLFile 通用 YAML 文件加载函数
-func LoadYAMLFile(path string, cfg interface{}) {
+func LoadYAMLFile(path string, cfg any) error {
 	file, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatalf("[error][pkg/config/base] 无法读取配置文件 [%s]: %v", path, err)
+		return fmt.Errorf("[error][pkg/config/base] 无法读取配置文件 [%s]: %w", path, err)
 	}
 
 	if err := yaml.Unmarshal(file, cfg); err != nil {
-		log.Fatalf("[error][pkg/config/base] 解析配置文件失败: %v", err)
+		return fmt.Errorf("[error][pkg/config/base] 解析配置文件失败: %w", err)
 	}
 
 	log.Printf("[info][pkg/config/base] 配置文件加载成功: %s", path)
+	return nil
 }
 
 // GetEnv 获取环境变量，若不存在则返回默认值
