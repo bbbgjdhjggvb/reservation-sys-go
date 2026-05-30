@@ -19,6 +19,14 @@ func setupAuthTestRouter() *gin.Engine {
 	return gin.New()
 }
 
+// 测试 handler.go 文件中 func (h *AdminAuthHandler) LoginHandler(c *gin.Context)
+//
+// 函数功能：处理管理员登录请求，调用 gRPC 验证账号密码并签发 JWT
+//
+// 测试场景：
+// 1. 登录成功 — 验证返回200和"登录成功"
+// 2. 参数错误 — 验证损坏的 JSON body 返回400
+// 3. 凭据错误 — 验证错误的用户名密码返回401
 func TestLoginHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -83,6 +91,13 @@ func TestLoginHandler(t *testing.T) {
 	}
 }
 
+// 测试 handler.go 文件中 func (h *AdminAuthHandler) GetAdminInfoHandler(c *gin.Context)
+//
+// 函数功能：返回当前已认证管理员的信息
+//
+// 测试场景：
+// 1. 已认证管理员获取信息 — 验证返回200
+// 2. 未认证（上下文中无admin claims） — 验证返回401
 func TestGetAdminInfoHandler(t *testing.T) {
 	hdl := NewAdminAuthHandler(nil)
 

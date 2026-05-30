@@ -98,29 +98,48 @@ func TestStatusText(t *testing.T) {
 	}
 }
 
-// 测试结构体 ReservationOrder TableName() 函数
+// 测试 model.go 文件中 func (ReservationOrder) TableName() string
+//
+// 函数功能：返回 ReservationOrder 对应的数据库表名
 func TestReservationOrder_TableName(t *testing.T) {
+	// 1. 验证表名是否为 "reservation_orders"
 	assert.Equal(t, "reservation_orders", ReservationOrder{}.TableName())
 }
 
-// 测试结构体 ReservationSlot TableName() 函数
+// 测试 model.go 文件中 func (ReservationSlot) TableName() string
+//
+// 函数功能：返回 ReservationSlot 对应的数据库表名
 func TestReservationSlot_TableName(t *testing.T) {
+	// 1. 验证表名是否为 "reservation_slots"
 	assert.Equal(t, "reservation_slots", ReservationSlot{}.TableName())
 }
 
-// 测试结构体 ReviewRecord TableName() 函数
+// 测试 model.go 文件中 func (ReviewRecord) TableName() string
+//
+// 函数功能：返回 ReviewRecord 对应的数据库表名
 func TestReviewRecord_TableName(t *testing.T) {
+	// 1. 验证表名是否为 "review_records"
 	assert.Equal(t, "review_records", ReviewRecord{}.TableName())
 }
 
 // repository.go 函数测试
 
+// 测试 repository.go 文件中 func NewRepository(db *gorm.DB) Repository
+//
+// 函数功能：根据传入的 gorm.DB 创建 Repository 实例
+//
+// 测试场景：
+// 1. 成功创建 Repository
+//  1. 验证 repo 不为 nil
+//  2. 验证 repo 实现了 Repository 接口
 func TestNewRepository(t *testing.T) {
 	gormDB, _ := newMockDB(t)
 	repo := NewRepository(gormDB)
+
+	// 1. 验证 repo 不为 nil
 	assert.NotNil(t, repo)
 
-	// 用来断言一个对象是否实现了接口
+	// 2. 验证 repo 实现了 Repository 接口
 	assert.Implements(t, (*Repository)(nil), repo)
 }
 
@@ -129,7 +148,7 @@ func TestNewRepository(t *testing.T) {
 // 函数功能：根据订单的 ID 进行查询
 //
 // 测试场景：
-// 1. 顶端存在且正确加载时间段
+// 1. 订单存在且正确加载时间段
 //  1. SQL 语句是否是
 //     - SELECT * FROM `reservation_orders` WHERE `reservation_orders`.`id` = ? ORDER BY `reservation_orders`.`id` LIMIT ?
 //     - SELECT * FROM `reservation_slots` WHERE `reservation_slots`.`order_id` = ?
@@ -407,6 +426,17 @@ func TestCancelOrder(t *testing.T) {
 }
 
 // ========== SetSlotPassword ==========
+//
+// 测试 repository.go 文件中 func SetSlotPassword(slotID uint, password string) error
+//
+// 函数功能：为已通过的时段设置门锁密码
+//
+// 测试场景：
+// 1. 已通过时段正常设置密码
+//  1. SQL 语句是否为 UPDATE reservation_slots SET password=?,updated_at=? WHERE id = ? AND status = ?
+//  2. 验证正常设置密码不返回错误
+// 2. 非已通过时段返回错误
+//  1. 验证返回错误信息包含"时段不存在或状态不允许设置密码"
 
 func TestSetSlotPassword(t *testing.T) {
 	t.Run("已通过时段正常设置密码", func(t *testing.T) {
@@ -438,6 +468,19 @@ func TestSetSlotPassword(t *testing.T) {
 }
 
 // ========== CreateReviewRecord + FindReviewRecordsByOrderID ==========
+//
+// 测试 repository.go 文件中 func CreateReviewRecord(record *ReviewRecord) error
+// 和 func FindReviewRecordsByOrderID(orderID uint) ([]ReviewRecord, error)
+//
+// 函数功能：创建审核记录和查询审核记录列表
+//
+// 测试场景：
+// 1. 创建审核记录
+//  1. SQL 语句是否为 INSERT INTO review_records
+//  2. 验证记录 ID 被正确回填
+// 2. 查询审核记录列表
+//  1. SQL 语句是否为 SELECT * FROM review_records WHERE order_id = ? ORDER BY created_at asc
+//  2. 验证返回记录数量和内容正确
 
 func TestReviewRecordOperations(t *testing.T) {
 	t.Run("创建审核记录", func(t *testing.T) {
@@ -484,6 +527,15 @@ func TestReviewRecordOperations(t *testing.T) {
 }
 
 // ========== FindSlotsByTimeRange ==========
+//
+// 测试 repository.go 文件中 func FindSlotsByTimeRange(start, end time.Time) ([]ReservationSlot, error)
+//
+// 函数功能：查询指定时间范围内有效的时段（状态为待审核或已通过）
+//
+// 测试场景：
+// 1. 查询存在时段的时间范围
+//  1. SQL 语句是否为 SELECT * FROM reservation_slots WHERE status IN (?,?,?) AND (start_time < ? AND end_time > ?)
+//  2. 验证返回时段数量正确
 
 func TestFindSlotsByTimeRange(t *testing.T) {
 	gormDB, mock := newMockDB(t)
@@ -509,6 +561,15 @@ func TestFindSlotsByTimeRange(t *testing.T) {
 }
 
 // ========== UpdateSlotStatus ==========
+//
+// 测试 repository.go 文件中 func UpdateSlotStatus(slotID uint, status int) error
+//
+// 函数功能：更新单个时段的状态
+//
+// 测试场景：
+// 1. 正常更新时段状态
+//  1. SQL 语句是否为 UPDATE reservation_slots SET status=?,updated_at=? WHERE id = ?
+//  2. 验证操作不返回错误
 
 func TestUpdateSlotStatus(t *testing.T) {
 	gormDB, mock := newMockDB(t)
@@ -524,6 +585,19 @@ func TestUpdateSlotStatus(t *testing.T) {
 }
 
 // ========== CreateOrderWithLock 原子操作 ==========
+//
+// 测试 repository.go 文件中 func CreateOrderWithLock(order *ReservationOrder, slots []ReservationSlot) error
+//
+// 函数功能：原子创建订单和时段，使用 SELECT ... FOR UPDATE 检测时段冲突
+//
+// 测试场景：
+// 1. 无冲突时正常创建
+//  1. SQL 是否包含 SELECT count(*) FROM reservation_slots ... FOR UPDATE 检测冲突
+//  2. 是否执行 INSERT INTO reservation_orders
+//  3. 是否执行 INSERT INTO reservation_slots
+//  4. 订单 ID 和数据是否正确回填
+// 2. 时段冲突时返回错误
+//  1. 检测到冲突时是否返回"第1个时间段已被预约"错误
 
 func TestCreateOrderWithLock(t *testing.T) {
 	t.Run("无冲突时正常创建", func(t *testing.T) {

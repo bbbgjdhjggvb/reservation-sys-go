@@ -14,7 +14,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware 用户 JWT 认证中间件
+// AuthMiddleware 用户 JWT 认证中间件。
+//
+// 验证流程:
+//  1. 从 Authorization 头提取 Bearer Token
+//  2. 解析并校验用户 JWT Token
+//  3. 将 openid 写入 gin.Context（key: "openid"）
+//
+// 返回值:
+//   - gin.HandlerFunc: Gin 中间件函数，未通过验证时返回 401 并中止请求链
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -59,7 +67,15 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// CORSMiddleware 根据运行模式动态生成 CORS 中间件
+// CORSMiddleware 根据运行模式动态生成 CORS 中间件。
+//   - debug 模式：允许所有来源跨域访问（方便前端联调）
+//   - release 模式：仅允许 allowOrigins 白名单域名，且允许携带凭证
+//
+// 参数:
+//   - allowOrigins: release 模式下允许的来源域名列表
+//
+// 返回值:
+//   - gin.HandlerFunc: CORS 中间件
 func CORSMiddleware(allowOrigins []string) gin.HandlerFunc {
 	if gin.Mode() == gin.DebugMode {
 		log.Println("[cors] debug模式：允许所有来源跨域访问")

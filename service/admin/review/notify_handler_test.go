@@ -69,6 +69,19 @@ func makeApprovedOrderWithPassword() *reservationdb.ReservationOrder {
 	}
 }
 
+// 测试 notify_handler.go 文件中 func (h *NotifyHandler) NotifyHandler(c *gin.Context)
+//
+// 函数功能：发送审批通过通知（通过 gRPC 调用 Gateway 推送模板消息）
+//
+// 测试场景：
+// 1. 发送成功 — 验证返回200
+// 2. 未登录 — 验证返回401
+// 3. 角色错误 — 验证返回403
+// 4. 无效ID — 验证返回400
+// 5. 订单不存在 — 验证返回400
+// 6. 订单状态不正确 — 验证返回400
+// 7. 未设置密码 — 验证返回400
+// 8. gRPC 错误 — 验证返回500
 func TestNotifyHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		_, mockRepo, mockNotify, notifyHdl, r := setupNotifyTestHandler(t)
@@ -178,6 +191,17 @@ func TestNotifyHandler(t *testing.T) {
 	})
 }
 
+// 测试 notify_handler.go 文件中 func (h *NotifyHandler) RejectionNotifyHandler(c *gin.Context)
+//
+// 函数功能：发送审核拒绝通知（通过 gRPC 调用 Gateway 推送模板消息）
+//
+// 测试场景：
+// 1. 一级审核拒绝通知成功 — 验证返回200
+// 2. 二级审核拒绝通知成功 — 验证返回200
+// 3. 未登录 — 验证返回401
+// 4. 订单不存在 — 验证返回400
+// 5. 订单状态不正确 — 验证返回400
+// 6. gRPC 错误 — 验证返回500
 func TestRejectionNotifyHandler(t *testing.T) {
 	t.Run("success_level1_rejected", func(t *testing.T) {
 		_, mockRepo, mockNotify, notifyHdl, r := setupNotifyTestHandler(t)
@@ -266,6 +290,13 @@ func TestRejectionNotifyHandler(t *testing.T) {
 	})
 }
 
+// 测试 notify_handler.go 文件中 func orderSlotsToNotify(slots []ReservationSlot) []NotifySlotInfo
+//
+// 函数功能：将 ReservationSlot 切片转换为通知用的时段信息
+//
+// 测试场景：
+// 1. 正常转换 — 验证时间和密码正确映射
+// 2. 空切片 — 验证返回空切片
 func TestOrderSlotsToNotify(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		slots := []reservationdb.ReservationSlot{

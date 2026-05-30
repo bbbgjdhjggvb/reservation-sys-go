@@ -10,7 +10,14 @@ import (
 )
 
 // ---------- UserAuthService.LoginByCode 测试 ----------
+//
+// 测试 service.go 文件中 func (s *UserAuthService) LoginByCode(code string) (string, error)
+//
+// 函数功能：通过微信 OAuth code 换取 openid
 
+// TestUserAuthService_LoginByCode 测试通过 code 登录
+//  1. 登录成功 — 验证返回 openid
+//  2. OAuth失败 — 验证返回 error
 func TestUserAuthService_LoginByCode(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -72,7 +79,15 @@ func TestUserAuthService_LoginByCode(t *testing.T) {
 }
 
 // ---------- UserAuthService.FindOrCreate 测试 ----------
+//
+// 测试 service.go 文件中 func (s *UserAuthService) FindOrCreate(openid string) (*User, error)
+//
+// 函数功能：根据 openid 查找用户，不存在则创建新用户
 
+// TestUserAuthService_FindOrCreate 测试查找或创建用户
+//  1. 创建用户成功 — 验证昵称、状态、登录时间正确
+//  2. 获取用户信息失败(昵称为空) — 验证昵称为空但创建成功
+//  3. 数据库Upsert失败 — 验证返回 error
 func TestUserAuthService_FindOrCreate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -173,7 +188,12 @@ func TestUserAuthService_FindOrCreate(t *testing.T) {
 	}
 }
 
-// 测试使用自定义 UserInfoProvider
+// 测试 service.go 文件中 func NewUserAuthServiceWithUserInfo 的自定义 UserInfoProvider 功能
+//
+// 函数功能：使用自定义 UserInfoProvider 替代微信 API 获取用户信息
+//
+// TestUserAuthService_FindOrCreate_WithCustomProvider 验证自定义提供者返回指定昵称
+//  1. 验证自定义昵称被正确使用
 func TestUserAuthService_FindOrCreate_WithCustomProvider(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -202,7 +222,13 @@ func TestUserAuthService_FindOrCreate_WithCustomProvider(t *testing.T) {
 }
 
 // ---------- UserAuthService.SetStatus 测试 ----------
+//
+// 测试 service.go 文件中 func (s *UserAuthService) SetStatus(openid string, active bool) error
+//
+// 函数功能：设置用户激活状态（当前为占位符实现，始终返回 nil）
 
+// TestUserAuthService_SetStatus 验证 SetStatus 不返回错误
+//  1. 验证返回 nil
 func TestUserAuthService_SetStatus(t *testing.T) {
 	// 当前实现只是占位符，返回 nil
 	svc := &UserAuthService{}

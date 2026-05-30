@@ -16,7 +16,16 @@ var (
 	adminHandler *AdminAuthHandler
 )
 
-// InitModule 初始化用户认证模块
+// InitModule 初始化用户认证模块（用户 OAuth 登录 + JWT 签发）。
+//
+// 参数:
+//   - db: GORM 数据库实例（自动迁移 User 表）
+//   - oa: 微信公众号实例（用于 OAuth 换取 openid）
+//   - defaultRedirect: OAuth 回调后的默认重定向地址
+//   - redirectURLs: state 到重定向地址的映射（用于多页面跳转）
+//
+// 返回值:
+//   - error: 表迁移失败时返回错误
 func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, defaultRedirect string, redirectURLs map[string]string) error {
 	// 自动迁移表结构
 	if err := platform.AutoMigrate(db, &User{}); err != nil {
@@ -31,7 +40,13 @@ func InitModule(db *gorm.DB, oa *officialaccount.OfficialAccount, defaultRedirec
 	return nil
 }
 
-// InitAdminModule 初始化管理员认证模块
+// InitAdminModule 初始化管理员认证模块（管理员登录 + JWT 签发）。
+//
+// 参数:
+//   - db: GORM 数据库实例（自动迁移 Admin 表）
+//
+// 返回值:
+//   - error: 表迁移失败时返回错误
 func InitAdminModule(db *gorm.DB) error {
 	if err := platform.AutoMigrate(db, &Admin{}); err != nil {
 		return fmt.Errorf("迁移 Admin 表失败: %w", err)
@@ -43,6 +58,10 @@ func InitAdminModule(db *gorm.DB) error {
 	return nil
 }
 
+// GetUserAuthService 获取用户认证服务实例。
+//
+// 返回值:
+//   - *UserAuthService: 用户认证服务实例（未初始化时 panic）
 func GetUserAuthService() *UserAuthService {
 	if instance == nil {
 		panic("auth module not initialized")
@@ -51,6 +70,10 @@ func GetUserAuthService() *UserAuthService {
 	return instance
 }
 
+// GetUserAuthHandler 获取用户认证处理器实例。
+//
+// 返回值:
+//   - *UserAuthHandler: 用户认证处理器实例（未初始化时 panic）
 func GetUserAuthHandler() *UserAuthHandler {
 	if handler == nil {
 		panic("auth module not initialized")
@@ -59,7 +82,10 @@ func GetUserAuthHandler() *UserAuthHandler {
 	return handler
 }
 
-// GetAdminAuthService 获取管理员认证服务实例
+// GetAdminAuthService 获取管理员认证服务实例。
+//
+// 返回值:
+//   - *AdminAuthService: 管理员认证服务实例（未初始化时 panic）
 func GetAdminAuthService() *AdminAuthService {
 	if adminService == nil {
 		panic("admin auth module not initialized")
@@ -67,7 +93,10 @@ func GetAdminAuthService() *AdminAuthService {
 	return adminService
 }
 
-// GetAdminAuthHandler 获取管理员认证处理器实例
+// GetAdminAuthHandler 获取管理员认证处理器实例。
+//
+// 返回值:
+//   - *AdminAuthHandler: 管理员认证处理器实例（未初始化时 panic）
 func GetAdminAuthHandler() *AdminAuthHandler {
 	if adminHandler == nil {
 		panic("admin auth module not initialized")

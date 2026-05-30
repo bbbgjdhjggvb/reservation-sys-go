@@ -5,7 +5,14 @@ import (
 	"testing"
 )
 
-// FuzzSubmitReqValidation 验证各种 JSON 输入解析 SubmitReq 不会 panic。
+// FuzzSubmitReqValidation 测试 dto.go 中 SubmitReq 的 JSON 反序列化健壮性
+//
+// 函数功能：验证任意 JSON 输入解析 SubmitReq 不会 panic
+//
+// 测试场景：
+// 1. 各种合法/非法 JSON 输入反序列化不应 panic
+//  1. Fuzz 引擎自动变异种子数据（随机增删字节、翻转二进制位、插入特殊字符、调整数组长度、改变数字值）
+//  2. JSON 解析错误是可接受的（返回 error），但不能 panic
 func FuzzSubmitReqValidation(f *testing.F) {
 	// 种子语料
 	seeds := []string{

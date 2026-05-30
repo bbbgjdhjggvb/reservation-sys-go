@@ -1,6 +1,3 @@
-/*
- * NotificationService 依赖于 AuthService
- */
 package notification
 
 import (
@@ -22,16 +19,29 @@ type NotificationService struct {
 	orderFetcher OrderFetcher
 }
 
+// NewNotificationService 创建通知服务实例。
+//
+// 参数:
+//   - authService: 用户认证服务实例（可为 nil，仅推送通知场景）
+//
+// 返回值:
+//   - *NotificationService: 通知服务实例
 func NewNotificationService(authService *auth.UserAuthService) *NotificationService {
 	return &NotificationService{authService: authService}
 }
 
-// SetOrderFetcher 设置订单查询函数
+// SetOrderFetcher 设置订单查询函数（由外部注入，避免循环依赖）。
+//
+// 参数:
+//   - fetcher: 订单查询函数
 func (s *NotificationService) SetOrderFetcher(fetcher OrderFetcher) {
 	s.orderFetcher = fetcher
 }
 
-// GetOrderFetcher 获取订单查询函数
+// GetOrderFetcher 获取当前注入的订单查询函数。
+//
+// 返回值:
+//   - OrderFetcher: 订单查询函数（未注入时返回 nil）
 func (s *NotificationService) GetOrderFetcher() OrderFetcher {
 	return s.orderFetcher
 }

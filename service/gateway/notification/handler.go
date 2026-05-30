@@ -19,14 +19,27 @@ type NotificationHandler struct {
 	svc *NotificationService
 }
 
-// NewNotificationHandler 构造函数
+// NewNotificationHandler 创建通知处理器实例。
+//
+// 参数:
+//   - svc: 通知服务实例
+//
+// 返回值:
+//   - *NotificationHandler: 通知处理器实例
 func NewNotificationHandler(svc *NotificationService) *NotificationHandler {
 	return &NotificationHandler{
 		svc: svc,
 	}
 }
 
-// ProcessMessage 处理所有来自微信的消息入口
+// ProcessMessage 处理所有来自微信的消息入口（关注/取消关注事件、文本消息等）。
+//
+// 参数:
+//   - oa: 微信公众号实例
+//   - msg: 微信混合消息
+//
+// 返回值:
+//   - *message.Reply: 回复消息（无需回复时返回 nil）
 func (h *NotificationHandler) ProcessMessage(oa *officialaccount.OfficialAccount, msg *message.MixMessage) *message.Reply {
 	if msg == nil {
 		log.Println("[NotificationHandler] msg is nil")
@@ -69,7 +82,26 @@ func (h *NotificationHandler) ProcessMessage(oa *officialaccount.OfficialAccount
 
 // ==================== 模板消息通知 Handler ====================
 
-// NotifyHandler 发送微信通知（审核通过后通知用户）
+// NotifyHandler 发送微信模板消息通知（审核通过后通知用户门锁密码等信息）。
+//
+// 验证流程:
+//  1. 校验管理员身份和角色（需一级管理员）
+//  2. 解析订单 ID 并查询订单信息
+//  3. 检查订单状态和密码是否已设置
+//  4. 调用微信模板消息接口发送通知
+//
+//	@Summary		发送微信模板消息通知
+//	@Description	一级管理员向已审核通过的订单用户发送微信模板消息（含门锁密码等信息）
+//	@Tags			网关-通知
+//	@Produce		json
+//	@Param			id	path		string	true	"订单ID"
+//	@Success		200	{object}	auth.AdminResp	"通知发送成功"
+//	@Failure		400	{object}	auth.AdminResp	"参数错误或订单状态不符"
+//	@Failure		401	{object}	auth.AdminResp	"未登录"
+//	@Failure		403	{object}	auth.AdminResp	"权限不足"
+//	@Failure		500	{object}	auth.AdminResp	"服务未配置或发送失败"
+//	@Security		BearerAuth
+//	@Router			/api/admin/order/{id}/notify [post]
 func (h *NotificationHandler) NotifyHandler(c *gin.Context) {
 	claims, exists := auth.GetAdminInfo(c)
 	if !exists {

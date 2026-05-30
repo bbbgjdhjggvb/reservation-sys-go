@@ -38,6 +38,19 @@ func mustTime(s string) time.Time {
 }
 
 // ========== Submit（批量提交） ==========
+//
+// 测试 service.go 文件中 func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *SubmitReq) (*SubmitResp, error)
+//
+// 函数功能：提交预约申请，支持多时段并自动合并连续时段
+//
+// 测试场景：
+// 1. 正常提交单个时段 — 验证订单创建成功、ID回填
+// 2. 正常提交多个时段(3个) — 验证 TotalSlots 等于 3
+// 3. 第1个时段已被占用(原子检测)
+// 4. 第2个时段已被占用(多时段场景)
+// 5. 创建订单失败(DB错误)
+// 6. 两个连续时段自动合并为1个存储
+// 7. 三个时段其中两个连续，合并为2个存储
 
 func TestReservationService_Submit(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -204,6 +217,14 @@ func TestReservationService_Submit(t *testing.T) {
 }
 
 // ========== GetMyReservations ==========
+//
+// 测试 service.go 文件中 func (s *ReservationService) GetMyReservations(openid string) ([]*MyReservationResp, error)
+//
+// 函数功能：查询当前用户的预约列表
+//
+// 测试场景：
+// 1. 获取用户订单列表成功 — 验证返回 2 条，Slots 正确加载
+// 2. 数据库错误 — 验证返回 error 和 nil
 
 func TestReservationService_GetMyReservations(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -247,6 +268,16 @@ func TestReservationService_GetMyReservations(t *testing.T) {
 }
 
 // ========== Cancel ==========
+//
+// 测试 service.go 文件中 func (s *ReservationService) Cancel(orderID uint, openid string) error
+//
+// 函数功能：取消预约订单，校验权限和状态
+//
+// 测试场景：
+// 1. 取消成功 — 验证不返回错误
+// 2. 订单不存在 — 验证返回"不存在"错误
+// 3. 无权操作他人订单 — 验证返回"无权操作"错误
+// 4. 已完成的订单无法取消 — 验证返回"当前状态无法取消"错误
 
 func TestReservationService_Cancel(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -294,6 +325,20 @@ func TestReservationService_Cancel(t *testing.T) {
 }
 
 // ========== mergeContinuousSlots 连续时段合并 ==========
+//
+// 测试 service.go 文件中 func mergeContinuousSlots(slots []ParsedSlot) []ParsedSlot
+//
+// 函数功能：将连续的时段合并为一个长时段，支持乱序输入自动排序
+//
+// 测试场景：
+// 1. 空切片 — 返回空切片
+// 2. 单个时段不合并
+// 3. 两个非连续时段不合并
+// 4. 两个连续时段合并为一个
+// 5. 三个时段前两个连续，合并为两个
+// 6. 三个连续时段合并为一个
+// 7. 乱序输入后自动排序再合并
+// 8. 跨天的不连续时段不合并
 
 func TestMergeContinuousSlots(t *testing.T) {
 	tests := []struct {
@@ -387,6 +432,14 @@ func TestMergeContinuousSlots(t *testing.T) {
 }
 
 // ========== GetOrderByID ==========
+//
+// 测试 service.go 文件中 func (s *ReservationService) GetOrderByID(orderID uint) (*ReservationOrder, error)
+//
+// 函数功能：根据订单 ID 查询订单详情
+//
+// 测试场景：
+// 1. 查询成功 — 验证返回订单对象正确
+// 2. 订单不存在 — 验证返回 gorm.ErrRecordNotFound 错误
 
 func TestReservationService_GetOrderByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -413,7 +466,15 @@ func TestReservationService_GetOrderByID(t *testing.T) {
 }
 
 // ========== generateOrderNo ==========
-
+//
+// 测试 service.go 文件中 func generateOrderNo() string
+//
+// 函数功能：生成格式为 R + 14位时间 + 4位hex小写的订单号
+//
+// 测试场景：
+// 1. 验证订单号长度为 19
+// 2. 验证以 R 开头
+// 3. 连续两次生成不应相同
 func TestGenerateOrderNo(t *testing.T) {
 	// 验证格式：R + 14位时间 YYYYMMDDHHmmss + 4位hex小写
 	orderNo := generateOrderNo()
@@ -426,6 +487,14 @@ func TestGenerateOrderNo(t *testing.T) {
 }
 
 // ========== GetOccupiedSlots 错误路径 ==========
+//
+// 测试 service.go 文件中 func (s *ReservationService) GetOccupiedSlots(date string) ([]*OccupiedSlotResp, error)
+//
+// 函数功能：验证日期格式错误和数据库查询错误时的处理
+//
+// 测试场景：
+// 1. 日期格式错误 — 验证返回"日期格式错误"error
+// 2. 数据库查询错误 — 验证返回 error
 
 func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -452,7 +521,13 @@ func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 }
 
 // ========== Cancel DB 错误路径 ==========
-
+//
+// 测试 service.go 文件中 Cancel 在非 RecordNotFound 类数据库错误时的处理
+//
+// 函数功能：验证数据库查询返回非 RecordNotFound 错误时正确传递错误
+//
+// 测试场景：
+// 1. FindOrderByID返回非RecordNotFound错误 — 验证错误信息包含"connection timeout"
 func TestReservationService_Cancel_DBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -470,6 +545,16 @@ func TestReservationService_Cancel_DBError(t *testing.T) {
 }
 
 // ========== GetOccupiedSlots（返回格式验证） ==========
+//
+// 测试 service.go 文件中 GetOccupiedSlots 的返回格式
+//
+// 函数功能：验证返回的时间格式、状态映射和时段时间值的正确性
+//
+// 测试场景：
+// 1. 时间格式为 string 类型且包含空格分隔符
+// 2. 待审核时段状态映射为 "pending"
+// 3. 已通过时段状态映射为 "approved"
+// 4. 时段时间值精确匹配
 
 func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 	ctrl := gomock.NewController(t)

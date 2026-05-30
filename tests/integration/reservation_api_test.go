@@ -69,6 +69,17 @@ func newAuthRequest(method, path, token string, body string) *http.Request {
 }
 
 // ========== 提交预约 ==========
+//
+// 测试 POST /api/reservation/reservation/submit 提交预约接口（完整链路：中间件 -> handler -> service -> repository -> MySQL）
+//
+// 函数功能：验证预约提交的完整请求链路
+//
+// 测试场景：
+// 1. 成功提交预约 — 验证返回200
+// 2. 无Token返回401
+// 3. 空请求体返回400
+// 4. 超过4个时段返回400
+// 5. 时段冲突返回400（含"已被预约"提示）
 
 func TestReservationAPI_Submit(t *testing.T) {
 	skipIfNoDocker(t)
@@ -135,6 +146,15 @@ func TestReservationAPI_Submit(t *testing.T) {
 }
 
 // ========== 查询我的预约 ==========
+//
+// 测试 GET /api/reservation/reservation/my 接口（完整链路）
+//
+// 函数功能：验证用户预约列表查询
+//
+// 测试场景：
+// 1. 空列表 — 验证返回200
+// 2. 有数据 — 验证返回包含"张三"
+// 3. 无Token返回401
 
 func TestReservationAPI_GetMyReservations(t *testing.T) {
 	skipIfNoDocker(t)
@@ -180,6 +200,15 @@ func TestReservationAPI_GetMyReservations(t *testing.T) {
 }
 
 // ========== 查询已占用时段 ==========
+//
+// 测试 GET /api/reservation/reservation/occupied 接口（完整链路）
+//
+// 函数功能：验证按日期查询已占用时段
+//
+// 测试场景：
+// 1. 成功查询 — 验证返回200
+// 2. 日期格式错误返回400
+// 3. 无日期参数使用今天
 
 func TestReservationAPI_GetOccupiedSlots(t *testing.T) {
 	skipIfNoDocker(t)
@@ -210,6 +239,17 @@ func TestReservationAPI_GetOccupiedSlots(t *testing.T) {
 }
 
 // ========== 取消预约 ==========
+//
+// 测试 DELETE /api/reservation/reservation/:id 接口（完整链路）
+//
+// 函数功能：验证取消预约，包含权限校验
+//
+// 测试场景：
+// 1. 取消成功 — 验证返回200，msg包含"取消成功"
+// 2. 订单不存在返回400
+// 3. 他人订单无权操作返回400
+// 4. 无效ID返回400
+// 5. 无Token返回401
 
 func TestReservationAPI_Cancel(t *testing.T) {
 	skipIfNoDocker(t)
@@ -271,6 +311,14 @@ func TestReservationAPI_Cancel(t *testing.T) {
 }
 
 // ========== 限流验证（真实 Redis） ==========
+//
+// 测试限流中间件在真实 Redis 环境下的行为（完整链路）
+//
+// 函数功能：验证用户维度限流，前2次通过，第3次返回429
+//
+// 测试场景：
+// 1. 前2次请求返回200
+// 2. 第3次请求返回429
 
 func TestReservationAPI_RateLimit(t *testing.T) {
 	skipIfNoDocker(t)

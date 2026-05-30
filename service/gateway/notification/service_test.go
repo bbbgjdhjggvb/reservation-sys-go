@@ -11,7 +11,14 @@ import (
 )
 
 // ========== NewNotificationService ==========
+//
+// 测试 service.go 文件中 func NewNotificationService(notifier Notifier) *NotificationService
+//
+// 函数功能：创建通知服务实例
 
+// TestNewNotificationService 验证构造函数创建非 nil 实例
+//  1. 验证 svc 不为 nil
+//  2. 验证 notifier 和 orderFetcher 为 nil
 func TestNewNotificationService(t *testing.T) {
 	svc := NewNotificationService(nil)
 	assert.NotNil(t, svc)
@@ -44,7 +51,13 @@ func TestOrderFetcher(t *testing.T) {
 }
 
 // ========== SendApprovalNotification ==========
+//
+// 测试 service.go 文件中 func (s *NotificationService) SendApprovalNotification(order *ReservationOrder) error
+//
+// 函数功能：发送审核通过通知
 
+// TestSendApprovalNotification 验证 notifier 未初始化时返回错误
+//  1. 验证返回 error 包含"微信通知服务未初始化"
 func TestSendApprovalNotification(t *testing.T) {
 	t.Run("notifier未初始化时返回错误", func(t *testing.T) {
 		svc := NewNotificationService(nil)
@@ -55,7 +68,13 @@ func TestSendApprovalNotification(t *testing.T) {
 }
 
 // ========== SendRejectionNotification ==========
+//
+// 测试 service.go 文件中 func (s *NotificationService) SendRejectionNotification(order *ReservationOrder, reason string) error
+//
+// 函数功能：发送审核拒绝通知
 
+// TestSendRejectionNotification 验证 notifier 未初始化时返回错误
+//  1. 验证返回 error 包含"微信通知服务未初始化"
 func TestSendRejectionNotification(t *testing.T) {
 	t.Run("notifier未初始化时返回错误", func(t *testing.T) {
 		svc := NewNotificationService(nil)
@@ -88,6 +107,13 @@ func TestNewWechatNotifier(t *testing.T) {
 
 // ========== WechatNotifier 错误路径 ==========
 
+// 测试 wechat_notifier.go 文件中 func (n *WechatNotifier) NotifyApprovalApproved(order *ReservationOrder) error
+//
+// 函数功能：推送审批通过模板消息
+
+// TestWechatNotifier_NotifyApprovalApproved_Errors 验证 OA 未初始化和 templateID 为空时的错误处理
+//  1. OA 未初始化 — 返回"微信服务号未初始化"错误
+//  2. templateID 为空 — 返回错误
 func TestWechatNotifier_NotifyApprovalApproved_Errors(t *testing.T) {
 	t.Run("oa未初始化时返回错误", func(t *testing.T) {
 		n := NewWechatNotifier(nil, "template_123")
@@ -104,6 +130,12 @@ func TestWechatNotifier_NotifyApprovalApproved_Errors(t *testing.T) {
 	})
 }
 
+// 测试 wechat_notifier.go 文件中 func (n *WechatNotifier) NotifyApprovalRejected(order *ReservationOrder, reason string) error
+//
+// 函数功能：推送审核拒绝模板消息
+
+// TestWechatNotifier_NotifyApprovalRejected_Errors 验证 OA 未初始化时的错误处理
+//  1. OA 未初始化 — 返回"微信服务号未初始化"错误
 func TestWechatNotifier_NotifyApprovalRejected_Errors(t *testing.T) {
 	t.Run("oa未初始化时返回错误", func(t *testing.T) {
 		n := NewWechatNotifier(nil, "template_123")

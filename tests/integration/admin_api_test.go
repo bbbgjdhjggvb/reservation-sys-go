@@ -85,6 +85,15 @@ func createOrder(t *testing.T, repo reservationdb.Repository, status int, openid
 }
 
 // ========== 订单列表 ==========
+//
+// 测试 GET /api/admin/orders 接口（完整链路：中间件 -> handler -> service -> repository -> MySQL）
+//
+// 函数功能：验证管理员分页查询订单列表
+//
+// 测试场景：
+// 1. 查询全部订单 — 验证返回200
+// 2. 按状态筛选 — 验证按 status=1 筛选
+// 3. 无Token返回401
 
 func TestAdminAPI_GetOrderList(t *testing.T) {
 	skipIfNoDocker(t)
@@ -121,6 +130,15 @@ func TestAdminAPI_GetOrderList(t *testing.T) {
 }
 
 // ========== 订单详情 ==========
+//
+// 测试 GET /api/admin/orders/:id 接口（完整链路）
+//
+// 函数功能：验证管理员查询订单详情
+//
+// 测试场景：
+// 1. 查询成功 — 验证返回200
+// 2. 订单不存在返回400
+// 3. 无效ID返回400
 
 func TestAdminAPI_GetOrderDetail(t *testing.T) {
 	skipIfNoDocker(t)
@@ -154,6 +172,17 @@ func TestAdminAPI_GetOrderDetail(t *testing.T) {
 }
 
 // ========== 一级审核 ==========
+//
+// 测试 POST /api/admin/review/level1/:id 接口（完整链路）
+//
+// 函数功能：验证一级管理员审核订单（通过/拒绝）
+//
+// 测试场景：
+// 1. 审核通过 — 验证返回200
+// 2. 审核拒绝（含评论） — 验证返回200
+// 3. 角色错误返回403
+// 4. 无Token返回401
+// 5. 错误状态（非一级待审）返回400
 
 func TestAdminAPI_Level1Review(t *testing.T) {
 	skipIfNoDocker(t)
@@ -212,6 +241,14 @@ func TestAdminAPI_Level1Review(t *testing.T) {
 }
 
 // ========== 二级审核 ==========
+//
+// 测试 POST /api/admin/review/level2/:id 接口（完整链路）
+//
+// 函数功能：验证二级管理员终审订单（通过/拒绝）
+//
+// 测试场景：
+// 1. 审核通过 — 验证返回200
+// 2. 角色错误返回403
 
 func TestAdminAPI_Level2Review(t *testing.T) {
 	skipIfNoDocker(t)
@@ -241,6 +278,14 @@ func TestAdminAPI_Level2Review(t *testing.T) {
 }
 
 // ========== 设置密码 ==========
+//
+// 测试 PUT /api/admin/review/level1/:id/slots/:slotID/password 接口（完整链路）
+//
+// 函数功能：验证一级管理员为已通过订单的时段设置门锁密码
+//
+// 测试场景：
+// 1. 设置成功 — 验证返回200，密码被持久化
+// 2. 订单未通过审核返回400
 
 func TestAdminAPI_SetPassword(t *testing.T) {
 	skipIfNoDocker(t)

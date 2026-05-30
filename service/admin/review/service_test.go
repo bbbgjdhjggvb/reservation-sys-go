@@ -19,6 +19,16 @@ func makeTestOrder(id uint, status int) *reservationdb.ReservationOrder {
 	}
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) Level1Review(adminID uint, orderID uint, req *ReviewActionReq) error
+//
+// 函数功能：执行一级审核（通过/拒绝），使用乐观锁更新订单状态
+//
+// 测试场景：
+// 1. 审核通过 — 状态从 PendingLevel1 变为 PendingLevel2
+// 2. 审核拒绝 — 状态从 PendingLevel1 变为 RejectedLevel1
+// 3. 订单不存在 — 返回"订单不存在"错误
+// 4. 状态不正确 — 返回"不允许一级审核"错误
+// 5. 乐观锁失败 — 返回"审核操作失败"错误
 func TestReviewService_Level1Review(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -102,6 +112,15 @@ func TestReviewService_Level1Review(t *testing.T) {
 	}
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) Level2Review(adminID uint, orderID uint, req *ReviewActionReq) error
+//
+// 函数功能：执行二级审核（终审通过/拒绝），使用乐观锁更新订单状态
+//
+// 测试场景：
+// 1. 审核通过 — 状态从 PendingLevel2 变为 Approved
+// 2. 审核拒绝 — 状态从 PendingLevel2 变为 RejectedLevel2
+// 3. 订单不存在 — 返回"订单不存在"错误
+// 4. 状态不正确 — 返回"不允许二级审核"错误
 func TestReviewService_Level2Review(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -143,6 +162,16 @@ func TestReviewService_Level2Review(t *testing.T) {
 	})
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) SetPassword(role int, orderID uint, slotID uint, password string) error
+//
+// 函数功能：为已通过终审的时段设置门锁动态密码，仅角色1管理员可操作
+//
+// 测试场景：
+// 1. 设置成功 — 验证不返回错误
+// 2. 角色不正确 — 返回"仅一级管理员可设置门锁密码"
+// 3. 订单不存在 — 返回"订单不存在"
+// 4. 订单状态不正确 — 返回"仅审核通过的订单可设置门锁密码"
+// 5. 数据库错误 — 返回 error
 func TestReviewService_SetPassword(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -188,6 +217,14 @@ func TestReviewService_SetPassword(t *testing.T) {
 	})
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) GetOrderDetail(orderID uint) (*ReservationOrder, []ReviewRecord, error)
+//
+// 函数功能：查询订单详情（含审核记录）
+//
+// 测试场景：
+// 1. 查询成功 — 验证返回订单和审核记录
+// 2. 订单不存在 — 返回"订单不存在"错误
+// 3. 审核记录查询失败 — 返回空切片，不报错
 func TestReviewService_GetOrderDetail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -226,6 +263,15 @@ func TestReviewService_GetOrderDetail(t *testing.T) {
 	})
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) GetOrdersByStatuses(statuses []int, page, pageSize int) ([]*ReservationOrder, int64, error)
+//
+// 函数功能：按状态分页查询订单，自动修正非法 page 和 pageSize
+//
+// 测试场景：
+// 1. 正常查询 — 验证返回订单列表和总数
+// 2. page 为负数自动修正为1
+// 3. pageSize 为0自动修正为20
+// 4. pageSize 超过上限自动修正为20
 func TestReviewService_GetOrdersByStatuses(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -264,6 +310,13 @@ func TestReviewService_GetOrdersByStatuses(t *testing.T) {
 	})
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) GetAllOrders(page, pageSize int) ([]*ReservationOrder, int64, error)
+//
+// 函数功能：分页查询全部订单（不限状态），自动修正非法参数
+//
+// 测试场景：
+// 1. 正常查询 — 验证返回所有订单和总数
+// 2. page 和 pageSize 越界自动修正
 func TestReviewService_GetAllOrders(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -288,6 +341,13 @@ func TestReviewService_GetAllOrders(t *testing.T) {
 	})
 }
 
+// 测试 service.go 文件中 func (s *ReviewService) GetOrderForNotify(orderID uint) (*ReservationOrder, error)
+//
+// 函数功能：查询订单用于发送通知，是 GetOrderDetail 的简化版本
+//
+// 测试场景：
+// 1. 查询成功 — 验证返回订单对象
+// 2. 订单不存在 — 返回"订单不存在"错误
 func TestReviewService_GetOrderForNotify(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

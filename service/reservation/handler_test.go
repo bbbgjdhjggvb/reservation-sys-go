@@ -32,6 +32,18 @@ func setupTestHandler(t *testing.T) (*gomock.Controller, *MockReservationReposit
 }
 
 // ========== SubmitHandler（支持多时段） ==========
+//
+// 测试 handler.go 文件中 func (h *ReservationHandler) SubmitHandler(c *gin.Context)
+//
+// 函数功能：处理用户提交预约申请，支持单时段和多时段
+//
+// 测试场景：
+// 1. 提交单个时段成功
+// 2. 提交多个时段(3个)成功
+// 3. 参数错误：缺少必填字段
+// 4. 参数错误：时间段格式不合法
+// 5. 参数错误：超过4个时段
+// 6. 未授权（无openid）
 
 func TestReservationHandler_Submit(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
@@ -200,6 +212,15 @@ func TestReservationHandler_Submit(t *testing.T) {
 }
 
 // ========== GetOccupiedSlots ==========
+//
+// 测试 handler.go 文件中 func (h *ReservationHandler) GetOccupiedSlots(c *gin.Context)
+//
+// 函数功能：根据日期查询已占用的时间段列表
+//
+// 测试场景：
+// 1. 成功查询已占用时段
+//  1. 验证 HTTP 状态码为 200
+//  2. 验证调用 FindSlotsByTimeRange 返回的数据正确
 
 func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
@@ -228,6 +249,15 @@ func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 }
 
 // ========== GetMyReservations ==========
+//
+// 测试 handler.go 文件中 func (h *ReservationHandler) GetMyReservations(c *gin.Context)
+//
+// 函数功能：查询当前用户的预约列表
+//
+// 测试场景：
+// 1. 成功获取预约列表
+//  1. 验证 HTTP 状态码为 200
+//  2. 验证响应 code 为 200
 
 func TestReservationHandler_GetMyReservations(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
@@ -260,6 +290,17 @@ func TestReservationHandler_GetMyReservations(t *testing.T) {
 }
 
 // ========== Cancel ==========
+//
+// 测试 handler.go 文件中 func (h *ReservationHandler) Cancel(c *gin.Context)
+//
+// 函数功能：取消预约订单
+//
+// 测试场景：
+// 1. 取消成功
+// 2. 无效ID(非数字)
+// 3. 订单不存在
+// 4. 无权操作(非本人)
+// 5. 未授权（无openid）
 
 func TestReservationHandler_Cancel(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
@@ -339,6 +380,13 @@ func TestReservationHandler_Cancel(t *testing.T) {
 
 // ========== 未授权访问测试（对应 shell 脚本的 test_unauthorized_access）==========
 
+// 测试 handler.go 文件中 GetMyReservations / Cancel 在无 Token 时返回 401
+//
+// 函数功能：验证未授权访问时返回 HTTP 401
+//
+// 测试场景：
+// 1. GetMyReservations 无Token返回401
+// 2. Cancel 无Token返回401
 func TestReservationHandler_UnauthorizedAccess(t *testing.T) {
 	ctrl, _, hdl, _ := setupTestHandler(t)
 	defer ctrl.Finish()
@@ -371,6 +419,14 @@ func TestReservationHandler_UnauthorizedAccess(t *testing.T) {
 
 // ========== 参数错误测试（对应 shell 脚本的 test_invalid_params）==========
 
+// 测试 handler.go 文件中 SubmitHandler 的参数校验逻辑
+//
+// 函数功能：验证各类非法参数输入时返回 HTTP 400 和正确的错误提示
+//
+// 测试场景：
+// 1. 缺少必填字段(applicant_name)
+// 2. 空请求体
+// 3. 时间段结束时间不晚于开始时间
 func TestReservationHandler_ParamValidation(t *testing.T) {
 	ctrl, _, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
@@ -428,6 +484,14 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 
 // ========== SubmitHandler GetOrderByID 回退路径 ==========
 
+// 测试 handler.go 文件中 SubmitHandler 在 GetOrderByID 失败时的回退逻辑
+//
+// 函数功能：提交成功后回查订单失败时仍返回成功（部分数据）
+//
+// 测试场景：
+// 1. Submit成功但GetOrderByID失败时返回部分数据
+//  1. 验证 HTTP 状态码为 200
+//  2. 验证响应 msg 包含"提交成功"
 func TestReservationHandler_Submit_GetOrderByIDFallback(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
@@ -468,6 +532,14 @@ func TestReservationHandler_Submit_GetOrderByIDFallback(t *testing.T) {
 
 // ========== GetMyReservations 数据库错误 ==========
 
+// 测试 handler.go 文件中 GetMyReservations 数据库错误路径
+//
+// 函数功能：数据库查询失败时返回 HTTP 500
+//
+// 测试场景：
+// 1. 数据库查询失败返回500
+//  1. Mock FindOrdersByOpenID 返回 error
+//  2. 验证 HTTP 状态码为 500
 func TestReservationHandler_GetMyReservations_DBError(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
@@ -490,6 +562,13 @@ func TestReservationHandler_GetMyReservations_DBError(t *testing.T) {
 
 // ========== GetOccupiedSlots 错误路径 ==========
 
+// 测试 handler.go 文件中 GetOccupiedSlots 错误路径
+//
+// 函数功能：验证日期格式错误和数据库查询失败时返回 HTTP 400
+//
+// 测试场景：
+// 1. 日期格式错误返回400
+// 2. 数据库查询失败返回400
 func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()
@@ -519,6 +598,14 @@ func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 
 // ========== 业务逻辑错误测试 ==========
 
+// 测试 handler.go 中 SubmitHandler 和 GetOccupiedSlots 等业务逻辑错误路径
+//
+// 函数功能：验证时段冲突、缺省日期、空列表等边界场景的处理
+//
+// 测试场景：
+// 1. 提交时时间段已被占用(原子检测)
+// 2. 查询已占用时段-缺省date参数使用今天
+// 3. 查询我的预约-空列表
 func TestReservationHandler_BusinessErrors(t *testing.T) {
 	ctrl, mockRepo, hdl, r := setupTestHandler(t)
 	defer ctrl.Finish()

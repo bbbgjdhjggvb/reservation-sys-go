@@ -56,6 +56,15 @@ func getOrder(id uint, status int) *reservationdb.ReservationOrder {
 	}
 }
 
+// 测试 handler.go 文件中 func (h *ReviewHandler) GetOrderListHandler(c *gin.Context)
+//
+// 函数功能：分页查询订单列表，支持按状态筛选
+//
+// 测试场景：
+// 1. 查询全部订单 — 验证返回200
+// 2. 按状态筛选 — 验证按 status=1 筛选
+// 3. 数据库错误 — 验证返回500
+// 4. 负数status退化为查询全部
 func TestGetOrderListHandler(t *testing.T) {
 	t.Run("all_orders", func(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
@@ -114,6 +123,14 @@ func TestGetOrderListHandler(t *testing.T) {
 	})
 }
 
+// 测试 handler.go 文件中 func (h *ReviewHandler) GetOrderDetailHandler(c *gin.Context)
+//
+// 函数功能：查询订单详情（含审核记录）
+//
+// 测试场景：
+// 1. 查询成功 — 验证返回200
+// 2. 无效ID — 验证返回400
+// 3. 订单不存在 — 验证返回400
 func TestGetOrderDetailHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
@@ -156,6 +173,17 @@ func TestGetOrderDetailHandler(t *testing.T) {
 	})
 }
 
+// 测试 handler.go 文件中 func (h *ReviewHandler) Level1ReviewHandler(c *gin.Context)
+//
+// 函数功能：处理一级审核（通过/拒绝），仅角色1管理员可操作
+//
+// 测试场景：
+// 1. 审核通过 — 验证状态从 PendingLevel1 变为 PendingLevel2
+// 2. 未登录 — 验证返回401
+// 3. 角色错误 — 角色2调用返回403
+// 4. 无效ID — 验证返回400
+// 5. 错误的请求体 — 验证返回400
+// 6. 服务层错误 — 验证返回400
 func TestLevel1ReviewHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
@@ -236,6 +264,14 @@ func TestLevel1ReviewHandler(t *testing.T) {
 	})
 }
 
+// 测试 handler.go 文件中 func (h *ReviewHandler) Level2ReviewHandler(c *gin.Context)
+//
+// 函数功能：处理二级审核（终审通过/拒绝），仅角色2管理员可操作
+//
+// 测试场景：
+// 1. 审核通过 — 验证状态从 PendingLevel2 变为 Approved
+// 2. 未登录 — 验证返回401
+// 3. 角色错误 — 角色1调用返回403
 func TestLevel2ReviewHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
@@ -278,6 +314,16 @@ func TestLevel2ReviewHandler(t *testing.T) {
 	})
 }
 
+// 测试 handler.go 文件中 func (h *ReviewHandler) SetPasswordHandler(c *gin.Context)
+//
+// 函数功能：为已通过终审的时段设置门锁动态密码，仅角色1管理员可操作
+//
+// 测试场景：
+// 1. 设置成功 — 验证返回200
+// 2. 未登录 — 验证返回401
+// 3. 无效订单ID — 验证返回400
+// 4. 无效时段ID — 验证返回400
+// 5. 错误的请求体 — 验证返回400
 func TestSetPasswordHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		_, mockRepo, _, hdl, r := setupReviewTestHandler(t)
