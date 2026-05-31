@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 
 const routes = [
   {
@@ -15,7 +15,7 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: (to) => ({ path: '/', query: to.query, hash: to.hash }),
+    redirect: (to: any) => ({ path: '/', query: to.query, hash: to.hash }),
   },
 ]
 
