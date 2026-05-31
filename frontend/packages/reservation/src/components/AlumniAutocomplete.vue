@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { ALUMNI_OPTIONS, ALUMNI_GROUPS } from '@reservation/shared'
+import { ALUMNI_OPTIONS } from '@reservation/shared'
 
 const props = defineProps<{
   modelValue: string
-  group?: keyof typeof ALUMNI_GROUPS
 }>()
 
 const emit = defineEmits<{
@@ -17,10 +16,6 @@ const activeIdx = ref(-1)
 const dropdownRef = ref<HTMLElement | null>()
 
 const filteredOptions = ref<string[]>([])
-const sourceOptions = computed(() => {
-  if (!props.group) return ALUMNI_OPTIONS
-  return ALUMNI_GROUPS[props.group] || []
-})
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -84,12 +79,11 @@ function fuzzyScore(query: string, target: string): number {
 }
 
 function filterAlumni(query: string) {
-  const source = sourceOptions.value
   if (!query.trim()) {
-    filteredOptions.value = source.slice(0, 12)
+    filteredOptions.value = ALUMNI_OPTIONS
     return
   }
-  const scored = source.map(opt => ({ opt, score: fuzzyScore(query, opt) }))
+  const scored = ALUMNI_OPTIONS.map(opt => ({ opt, score: fuzzyScore(query, opt) }))
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10)

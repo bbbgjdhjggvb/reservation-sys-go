@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useCalendar } from '@/composables/useCalendar'
 import { useToast } from '@/composables/useToast'
-import { ALUMNI_OPTIONS, ALUMNI_GROUPS } from '@reservation/shared'
+import { ALUMNI_OPTIONS } from '@reservation/shared'
 import AlumniAutocomplete from './AlumniAutocomplete.vue'
 import type { SubmitReq } from '@reservation/shared'
 
@@ -18,16 +18,9 @@ const { showToast } = useToast()
 const name = ref('')
 const year = ref('')
 const alumniValue = ref('')
-const alumniGroup = ref<keyof typeof ALUMNI_GROUPS>('domestic')
 const major = ref('')
 const phone = ref('')
 const reason = ref('')
-
-watch(alumniGroup, (group: keyof typeof ALUMNI_GROUPS) => {
-  if (alumniValue.value && !ALUMNI_GROUPS[group].includes(alumniValue.value)) {
-    alumniValue.value = ''
-  }
-})
 
 function handleSubmit() {
   if (!name.value.trim()) { showToast('请填写申请人姓名', 'error'); return }
@@ -97,18 +90,7 @@ function handleSubmit() {
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">校友会</label>
-        <div class="flex flex-wrap gap-2 mb-2">
-          <select
-            v-model="alumniGroup"
-            class="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition"
-          >
-            <option value="domestic">国内分会</option>
-            <option value="foreign">国外分会</option>
-            <option value="industry">行业分会</option>
-          </select>
-          <p class="text-sm text-gray-500 self-center">请选择分会组后再搜索具体分会</p>
-        </div>
-        <AlumniAutocomplete v-model="alumniValue" :group="alumniGroup" />
+        <AlumniAutocomplete v-model="alumniValue" />
       </div>
 
       <div>
