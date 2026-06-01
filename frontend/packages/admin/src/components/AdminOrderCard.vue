@@ -10,39 +10,38 @@ const props = defineProps<{
 const emit = defineEmits<{
   showDetail: [id: number]
   review: [orderId: number, action: number]
+  reviewInfo: [orderId: number]
+  setPassword: [order: OrderResp]
   notifyUser: [orderId: number]
 }>()
 
 const STATUS_STYLE: Record<number, string> = {
-  0: 'bg-yellow-100 text-yellow-700',
-  1: 'bg-green-100 text-green-600',
-  5: 'bg-blue-100 text-blue-700',
+  1: 'bg-yellow-100 text-yellow-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-red-100 text-red-600',
+  4: 'bg-red-100 text-red-600',
+  5: 'bg-green-100 text-green-600',
   6: 'bg-red-100 text-red-600',
   7: 'bg-red-100 text-red-600',
 }
 
-function showL1Actions(status: number, role: number): boolean {
-  return status === 0 && role === 1
+// 待审核状态，且当前管理员角色匹配 → 显示 通过/拒绝
+function showReviewActions(status: number, role: number): boolean {
+  return (status === 1 && role === 1) || (status === 2 && role === 2)
 }
 
-function showL2Actions(status: number, role: number): boolean {
-  return status === 5 && role === 2
+// 审核通过 + 一级管理员 → 显示 审核信息/设置密码/通知用户
+function showApprovedActions(status: number, role: number): boolean {
+  return status === 5 && role === 1
 }
 
-function hasPassword(order: OrderResp): boolean {
-  return order.slots?.some(s => !!s.password) ?? false
-}
-
-function showNotify(status: number, role: number, order: OrderResp): boolean {
-  return status === 1 && role === 1 && hasPassword(order)
+// 仅显示审核信息（已通过但非一级管理员，或已驳回/已取消/已完成）
+function showReviewInfoOnly(status: number, role: number): boolean {
+  return (status === 5 && role !== 1) || status === 3 || status === 4 || status === 6 || status === 7
 }
 
 function onReview(action: number) {
   emit('review', props.order.id, action)
-}
-
-function onNotify() {
-  emit('notifyUser', props.order.id)
 }
 </script>
 
@@ -71,40 +70,51 @@ function onNotify() {
     </div>
 
     <div class="flex items-center gap-2" @click.stop>
+      <!-- 待审核：通过 + 拒绝 -->
+      <template v-if="showReviewActions(order.status, adminRole)">
+        <button
+          class="px-3 py-1 text-xs font-medium rounded-lg bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition"
+          @click="onReview(1)"
+        >
+          通过
+        </button>
+        <button
+          class="px-3 py-1 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"
+          @click="onReview(2)"
+        >
+          拒绝
+        </button>
+      </template>
+
+      <!-- 审核通过（一级管理员）：审核信息 + 设置密码 + 通知用户 -->
+      <template v-if="showApprovedActions(order.status, adminRole)">
+        <button
+          class="px-3 py-1 text-xs font-medium rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition"
+          @click="$emit('reviewInfo', order.id)"
+        >
+          审核信息
+        </button>
+        <button
+          class="px-3 py-1 text-xs font-medium rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition"
+          @click="$emit('setPassword', order)"
+        >
+          设置密码
+        </button>
+        <button
+          class="px-3 py-1 text-xs font-medium rounded-lg bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100 transition"
+          @click="$emit('notifyUser', order.id)"
+        >
+          通知用户
+        </button>
+      </template>
+
+      <!-- 其他终态：仅审核信息 -->
       <button
-        v-if="showL1Actions(order.status, adminRole)"
-        class="px-3 py-1 text-xs font-medium rounded-lg bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition"
-        @click="onReview(1)"
+        v-if="showReviewInfoOnly(order.status, adminRole)"
+        class="px-3 py-1 text-xs font-medium rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition"
+        @click="$emit('reviewInfo', order.id)"
       >
-        通过
-      </button>
-      <button
-        v-if="showL1Actions(order.status, adminRole)"
-        class="px-3 py-1 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"
-        @click="onReview(2)"
-      >
-        拒绝
-      </button>
-      <button
-        v-if="showL2Actions(order.status, adminRole)"
-        class="px-3 py-1 text-xs font-medium rounded-lg bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition"
-        @click="onReview(1)"
-      >
-        通过
-      </button>
-      <button
-        v-if="showL2Actions(order.status, adminRole)"
-        class="px-3 py-1 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"
-        @click="onReview(2)"
-      >
-        拒绝
-      </button>
-      <button
-        v-if="showNotify(order.status, adminRole, order)"
-        class="ml-auto px-3 py-1 text-xs font-medium rounded-lg bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100 transition"
-        @click="onNotify"
-      >
-        通知用户
+        审核信息
       </button>
     </div>
   </div>

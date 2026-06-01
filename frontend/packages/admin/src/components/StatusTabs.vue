@@ -12,16 +12,16 @@ const emit = defineEmits<{
 
 const L1_TABS = [
   { label: '全部', status: -1 as const },
-  { label: '待一级审核', status: 0 as const },
-  { label: '已通过', status: 1 as const },
-  { label: '已驳回', status: '6,7' as const },
+  { label: '待一级审核', status: 1 as const },
+  { label: '已通过', status: 5 as const },
+  { label: '已驳回', status: '3,4' as const },
 ]
 
 const L2_TABS = [
   { label: '全部', status: -1 as const },
-  { label: '待二级审核', status: 5 as const },
-  { label: '已通过', status: 1 as const },
-  { label: '已驳回', status: '6,7' as const },
+  { label: '待二级审核', status: 2 as const },
+  { label: '已通过', status: 5 as const },
+  { label: '已驳回', status: '3,4' as const },
 ]
 </script>
 

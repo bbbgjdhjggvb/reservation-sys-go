@@ -43,7 +43,13 @@ func generateTestToken(t *testing.T, openid string) string {
 }
 
 // ---------- AuthMiddleware 测试 ----------
+//
+// 测试 middleware.go 文件中 func AuthMiddleware() gin.HandlerFunc
+//
+// 函数功能：验证请求中的用户 Bearer Token，解析 openid 并注入 Gin 上下文
 
+// TestAuthMiddleware_NoAuthorizationHeader 无 Authorization 头时返回 401
+//  1. 验证状态码为 401，code 为 401，msg 为"未授权，请从服务号进行订阅"
 func TestAuthMiddleware_NoAuthorizationHeader(t *testing.T) {
 	r := setupTestRouter()
 	r.GET("/protected", AuthMiddleware(), func(c *gin.Context) {
@@ -61,6 +67,11 @@ func TestAuthMiddleware_NoAuthorizationHeader(t *testing.T) {
 	assert.Equal(t, "未授权，请从服务号进行订阅", resp["msg"])
 }
 
+// TestAuthMiddleware_InvalidTokenFormat 验证各种非法 Token 格式均被拒绝
+//  1. 无Bearer前缀 — 返回401 "Token格式错误"
+//  2. 只写Bearer无token — 返回401 "Token格式错误"
+//  3. Basic前缀 — 返回401 "Token格式错误"
+//  4. Bearer多余空格 — 返回401 "Token格式错误"（按格式正确但token无效处理）
 func TestAuthMiddleware_InvalidTokenFormat(t *testing.T) {
 	r := setupTestRouter()
 	r.GET("/protected", AuthMiddleware(), func(c *gin.Context) {
@@ -111,6 +122,10 @@ func TestAuthMiddleware_InvalidTokenFormat(t *testing.T) {
 	}
 }
 
+// TestAuthMiddleware_InvalidToken 验证各种无效 Token 被拒绝
+//  1. 伪造token — 返回401 "无效或已过期"
+//  2. 空token — 返回401 "无效或已过期"
+//  3. 错误格式JWT — 返回401 "无效或已过期"
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	r := setupTestRouter()
 	r.GET("/protected", AuthMiddleware(), func(c *gin.Context) {
@@ -152,6 +167,10 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	}
 }
 
+// TestAuthMiddleware_ValidToken 验证有效 Token 正确放行并注入 openid
+//  1. 验证返回 200
+//  2. 验证 openid 正确存在于上下文中
+//  3. 验证响应体中的 openid 与 Token 中的一致
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	testOpenID := "test_openid_12345"
 	token := generateTestToken(t, testOpenID)
@@ -177,6 +196,9 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 	assert.Equal(t, testOpenID, resp["openid"])
 }
 
+// TestAuthMiddleware_AbortPreventsNextHandler 验证中间件拦截后后续 handler 不被执行
+//  1. 验证返回 401
+//  2. 验证 nextCalled 为 false
 func TestAuthMiddleware_AbortPreventsNextHandler(t *testing.T) {
 	// 不设置 Authorization，期望中间件拦截请求
 	nextCalled := false
@@ -193,6 +215,8 @@ func TestAuthMiddleware_AbortPreventsNextHandler(t *testing.T) {
 	assert.False(t, nextCalled, "中间件应拦截请求，后续handler不应被执行")
 }
 
+// TestAuthMiddleware_ResponseIsJSON 验证错误响应格式为 JSON
+//  1. 验证 Content-Type 为 application/json; charset=utf-8
 func TestAuthMiddleware_ResponseIsJSON(t *testing.T) {
 	r := setupTestRouter()
 	r.GET("/protected", AuthMiddleware(), func(c *gin.Context) {

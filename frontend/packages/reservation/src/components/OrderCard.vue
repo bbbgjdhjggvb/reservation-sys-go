@@ -12,29 +12,27 @@ defineEmits<{
 }>()
 
 const STATUS_STYLE: Record<number, string> = {
-  0: 'bg-yellow-100 text-yellow-700',
-  1: 'bg-green-100 text-green-600',
-  2: 'bg-red-100 text-red-600',
-  3: 'bg-gray-100 text-gray-500',
-  4: 'bg-gray-100 text-gray-400',
-  5: 'bg-blue-100 text-blue-700',
+  1: 'bg-yellow-100 text-yellow-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-red-100 text-red-600',
+  4: 'bg-red-100 text-red-600',
+  5: 'bg-green-100 text-green-600',
   6: 'bg-red-100 text-red-600',
   7: 'bg-red-100 text-red-600',
 }
 
 const SLOT_STATUS_DOT: Record<number, string> = {
-  0: '#f59e0b',
-  1: '#10b981',
-  2: '#ef4444',
-  3: '#9ca3af',
-  4: '#d1d5db',
-  5: '#f59e0b',
+  1: '#f59e0b',
+  2: '#3b82f6',
+  3: '#ef4444',
+  4: '#ef4444',
+  5: '#10b981',
   6: '#ef4444',
   7: '#ef4444',
 }
 
 function canCancel(status: number): boolean {
-  return status === 0 || status === 5
+  return status === 1
 }
 </script>
 

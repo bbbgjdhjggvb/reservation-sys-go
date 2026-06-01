@@ -13,7 +13,7 @@ type Config struct {
 	Server    baseconfig.ServerConfig      `yaml:"server"`
 	MySQL     baseconfig.MySQLConfig       `yaml:"mysql"`
 	Redis     baseconfig.RedisConfig       `yaml:"redis"`
-	RateLimit []baseconfig.RateLimitConfig `yaml:"rate_limit"`
+	RateLimit []baseconfig.RateLimitConfig `yaml:"ratelimit"`
 	JWT       baseconfig.JwtConfig         `yaml:"jwt"`
 }
 

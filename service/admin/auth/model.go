@@ -9,7 +9,13 @@ const (
 	RoleLevel2 = 2 // 二级管理员
 )
 
-// RoleText 返回角色中文描述
+// RoleText 返回管理员角色对应的中文描述。
+//
+// 参数:
+//   - role: 管理员角色ID（1=一级管理员, 2=二级管理员）
+//
+// 返回值:
+//   - string: 角色中文描述（未知角色返回空字符串）
 func RoleText(role int) string {
 	switch role {
 	case RoleLevel1:

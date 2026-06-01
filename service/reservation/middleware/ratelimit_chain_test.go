@@ -91,7 +91,12 @@ const (
 // 使用 miniredis 模拟 Redis，无需外部依赖
 // ====================================================================
 
-// TestRateLimitChain_UserDimension 场景1：用户维度限流整条链路
+// TestRateLimitChain_UserDimension 测试完整中间件链路（mockAuth -> RateLimit -> handler）中用户维度限流
+//
+// 函数功能：验证用户维度的限流在整条链路上正确生效
+//
+// 场景1：前3次请求返回200，第4次返回429
+//  1. 验证第4次响应 code 为 429，msg 包含"请求过于频繁"
 func TestRateLimitChain_UserDimension(t *testing.T) {
 	m, client := setupMiniredisClient(t)
 	defer m.Close()

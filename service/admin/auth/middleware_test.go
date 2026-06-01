@@ -23,6 +23,16 @@ func generateValidAdminToken(t *testing.T) string {
 	return token
 }
 
+// 测试 middleware.go 文件中 func AdminAuthMiddleware() gin.HandlerFunc
+//
+// 函数功能：验证请求中的 Admin Bearer Token，解析 admin claims 并注入 Gin 上下文
+//
+// 测试场景：
+// 1. 无 Authorization 头 — 返回 401 "未登录"
+// 2. 格式错误（无 Bearer 前缀） — 返回 401 "Token格式错误"
+// 3. 格式错误（错误前缀） — 返回 401 "Token格式错误"
+// 4. Token 无效 — 返回 401 "Token无效或已过期"
+// 5. 有效 Token — 返回 200
 func TestAdminAuthMiddleware(t *testing.T) {
 	r := setupMiddlewareTestRouter()
 	r.Use(AdminAuthMiddleware())
@@ -86,6 +96,15 @@ func TestAdminAuthMiddleware(t *testing.T) {
 	}
 }
 
+// 测试 middleware.go 文件中 func RoleMiddleware(allowedRoles ...int) gin.HandlerFunc
+//
+// 函数功能：验证当前管理员角色是否在允许的角色列表中
+//
+// 测试场景：
+// 1. 上下文中无 admin — 返回 401
+// 2. 角色不匹配 — 返回 403
+// 3. 角色匹配 — 放行返回 200
+// 4. 多角色允许 — 任一角色匹配即放行
 func TestRoleMiddleware(t *testing.T) {
 	t.Run("no_admin_in_context", func(t *testing.T) {
 		r := setupMiddlewareTestRouter()

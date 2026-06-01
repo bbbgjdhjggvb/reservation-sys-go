@@ -262,6 +262,12 @@ func TestInitUserJWT_SyncOnce(t *testing.T) {
 	assert.Equal(t, "openid_third", claims3.OpenID)
 }
 
+// 测试 jwt.go 文件中 func InitUserJWT(jwtSecret string, expireHours int)
+//
+// 函数功能：验证空密钥时使用默认密钥，不 panic
+//
+// 测试场景：
+// 1. 空密钥调用 InitUserJWT 不 panic
 func TestInitUserJWT_EmptySecretUsesDefault(t *testing.T) {
 	// sync.Once 在所有测试间共享，此测试验证空密钥时使用默认密钥的逻辑
 	// 由于 sync.Once 可能已在其他测试中触发，因此仅验证 InitUserJWT 不 panic
@@ -270,18 +276,36 @@ func TestInitUserJWT_EmptySecretUsesDefault(t *testing.T) {
 	}, "空密钥调用不应 panic")
 }
 
+// 测试 jwt.go 文件中 func InitAdminJWT(jwtSecret string, expireHours int)
+//
+// 函数功能：验证管理员空密钥时使用默认密钥，不 panic
+//
+// 测试场景：
+// 1. 空密钥调用 InitAdminJWT 不 panic
 func TestInitAdminJWT_EmptySecretUsesDefault(t *testing.T) {
 	assert.NotPanics(t, func() {
 		InitAdminJWT("", 0)
 	}, "空密钥调用不应 panic")
 }
 
+// 测试 jwt.go 文件中 func InitUserJWT(jwtSecret string, expireHours int)
+//
+// 函数功能：验证 expireHours 为 0 时不 panic，使用默认过期时间
+//
+// 测试场景：
+// 1. 零过期时间调用不 panic
 func TestInitUserJWT_ZeroExpireTimeKeepsDefault(t *testing.T) {
 	assert.NotPanics(t, func() {
 		InitUserJWT("some-secret", 0)
 	}, "零过期时间不应 panic")
 }
 
+// 测试 jwt.go 文件中 func InitAdminJWT(jwtSecret string, expireHours int)
+//
+// 函数功能：验证管理员 expireHours 为负数时不 panic，使用默认过期时间
+//
+// 测试场景：
+// 1. 负过期时间调用不 panic
 func TestInitAdminJWT_ZeroExpireTimeKeepsDefault(t *testing.T) {
 	assert.NotPanics(t, func() {
 		InitAdminJWT("some-secret", -1)

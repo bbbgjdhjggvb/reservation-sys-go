@@ -1,30 +1,20 @@
 package reservationdb
 
 import (
-	"reservation-sys/pkg/platform"
-
 	"gorm.io/gorm"
 )
 
 var repo Repository
 
-// InitModule 初始化预约数据库模块（自动迁移表结构 + 创建仓库实例）。
+// InitModule 初始化预约数据库模块（创建仓库实例）。
+//
+// 数据库表结构由 deploy/mysql/init.sql 管理，不使用 GORM AutoMigrate。
 //
 // 参数:
 //   - db: 已初始化的 GORM 数据库连接（指向 home_res 库）
 //
 // 注意: 必须在 InitModule 之前调用 platform.InitDB 完成数据库连接
 func InitModule(db *gorm.DB) error {
-	if err := platform.AutoMigrate(db, &ReservationOrder{}); err != nil {
-		return err
-	}
-	if err := platform.AutoMigrate(db, &ReservationSlot{}); err != nil {
-		return err
-	}
-	if err := platform.AutoMigrate(db, &ReviewRecord{}); err != nil {
-		return err
-	}
-
 	repo = NewRepository(db)
 	return nil
 }

@@ -12,8 +12,13 @@ var (
 	wechatNotifier      *WechatNotifier
 )
 
-// InitModule 初始化通知模块（完整版，由 v1 调用）
-// 包含微信消息事件处理 + 模板消息推送服务
+// InitModule 初始化通知模块（完整版，由 Gateway v1 调用）。
+// 包含微信消息事件处理 + 模板消息推送服务。
+//
+// 参数:
+//   - authService: 用户认证服务实例
+//   - oa: 微信公众号实例（用于发送模板消息）
+//   - templateID: 微信模板消息 ID（为空时发送会返回明确错误）
 func InitModule(authService *auth.UserAuthService, oa *officialaccount.OfficialAccount, templateID string) {
 	notificationService = NewNotificationService(authService)
 	notificationHandler = NewNotificationHandler(notificationService)
@@ -25,8 +30,12 @@ func InitModule(authService *auth.UserAuthService, oa *officialaccount.OfficialA
 	}
 }
 
-// InitNotifyModule 初始化通知推送模块（精简版，由 v3 调用）
-// 仅初始化模板消息推送功能，不包含微信消息事件处理
+// InitNotifyModule 初始化通知推送模块（精简版，由 Admin v3 调用）。
+// 仅初始化模板消息推送功能，不包含微信消息事件处理。
+//
+// 参数:
+//   - oa: 微信公众号实例（用于发送模板消息）
+//   - templateID: 微信模板消息 ID（为空时发送会返回明确错误）
 func InitNotifyModule(oa *officialaccount.OfficialAccount, templateID string) {
 	notificationService = NewNotificationService(nil)
 	notificationHandler = NewNotificationHandler(notificationService)
@@ -38,14 +47,20 @@ func InitNotifyModule(oa *officialaccount.OfficialAccount, templateID string) {
 	}
 }
 
-// SetOrderFetcher 设置订单查询函数（由 cmd 层注入，避免循环依赖）
+// SetOrderFetcher 设置订单查询函数（由 cmd 层注入，避免循环依赖）。
+//
+// 参数:
+//   - fetcher: 订单查询函数
 func SetOrderFetcher(fetcher OrderFetcher) {
 	if notificationService != nil {
 		notificationService.SetOrderFetcher(fetcher)
 	}
 }
 
-// GetNotificationService 获取通知服务实例
+// GetNotificationService 获取通知服务实例。
+//
+// 返回值:
+//   - *NotificationService: 通知服务实例（未初始化时 panic）
 func GetNotificationService() *NotificationService {
 	if notificationService == nil {
 		panic("notification module not initialized")
@@ -53,7 +68,10 @@ func GetNotificationService() *NotificationService {
 	return notificationService
 }
 
-// GetNotificationHandler 获取通知处理器实例
+// GetNotificationHandler 获取通知处理器实例。
+//
+// 返回值:
+//   - *NotificationHandler: 通知处理器实例（未初始化时 panic）
 func GetNotificationHandler() *NotificationHandler {
 	if notificationHandler == nil {
 		panic("notification module not initialized")
@@ -61,7 +79,10 @@ func GetNotificationHandler() *NotificationHandler {
 	return notificationHandler
 }
 
-// GetWechatNotifier 获取微信通知服务实例
+// GetWechatNotifier 获取微信通知服务实例。
+//
+// 返回值:
+//   - *WechatNotifier: 微信通知器实例（未初始化时返回 nil）
 func GetWechatNotifier() *WechatNotifier {
 	return wechatNotifier
 }

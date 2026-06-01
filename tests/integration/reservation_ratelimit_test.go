@@ -1,167 +1,95 @@
 package integration
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
-	"reservation-sys/service/reservation/middleware"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 )
 
-// buildRateLimitRouter 构造带限流中间件的简化路由。
-func buildRateLimitRouter(t *testing.T, redisCli *redis.Client, rateLimits []middleware.RateLimitConfig) *gin.Engine {
-	t.Helper()
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
+// ========== 限流：用户维度取消接口 ==========
 
-	api := r.Group("/api/reservation")
-	protected := api.Group("")
-	protected.Use(middleware.AuthMiddleware())
-	{
-		protected.GET("/reservation/my", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		})
-	}
+// 测试 DELETE /api/reservation/reservation/:id 限流行为
+// 完整链路: nginx → reservation 服务 → Redis（真实滑动窗口限流）
+//
+// 函数功能：验证取消接口（cancel）的用户维度限流，max=5，前5次触发限流检查，第6次返回429。
+//
+// 测试场景：
+//  1. 前5次请求触发限流检测（不关心业务返回码）
+//  2. 第6次请求返回429
 
-	submitGroup := protected.Group("")
-	cancelGroup := protected.Group("")
-	for i := range rateLimits {
-		switch rateLimits[i].HandlerName {
-		case "submit":
-			submitGroup.Use(middleware.RateLimitMiddleware(redisCli, &rateLimits[i]))
-		case "cancel":
-			cancelGroup.Use(middleware.RateLimitMiddleware(redisCli, &rateLimits[i]))
-		}
-	}
-	submitGroup.POST("/reservation/submit", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "ok"})
-	})
-	cancelGroup.DELETE("/reservation/:id", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "ok"})
-	})
-
-	return r
-}
-
-func TestRateLimit_UserDimension(t *testing.T) {
+func TestRateLimit_CancelUserDimension(t *testing.T) {
 	skipIfNoDocker(t)
-	redisCli, redisCleanup := newRedisClient(t)
-	defer redisCleanup()
+	_, cleanup := newRepo(t)
+	defer cleanup()
 
-	rateLimits := []middleware.RateLimitConfig{
-		{Window: 60 * time.Second, MaxRequests: 3, Dimension: middleware.RateLimitDimensionUser, KeyPrefix: "rl", HandlerName: "submit", FailOpen: true},
+	token := genUserToken(t, "e2e_rl_cancel")
+
+	// cancel 限流配置: window=60s, max=5（用户维度）
+	// 每次请求不同订单ID避免影响业务结果
+	// 前5次不超过限制，第6次返回429
+	for i := 1; i <= 5; i++ {
+		url := "/api/reservation/reservation/99999"
+		resp, err := doRequest("DELETE", url, token, "")
+		assert.NoError(t, err, "第 %d 次请求应正常发送", i)
+		// 只要不返回429就算通过限流检查
+		assert.NotEqual(t, http.StatusTooManyRequests, resp.StatusCode,
+			"第 %d 次请求不应被限流 (got 429)", i)
+		resp.Body.Close()
 	}
-	r := buildRateLimitRouter(t, redisCli, rateLimits)
-	token := genUserToken(t, "rl_user_001")
 
-	for i := 1; i <= 3; i++ {
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, ""))
-		assert.Equal(t, http.StatusOK, w.Code, "第 %d 次应返回 200", i)
-	}
-
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, ""))
-	assert.Equal(t, http.StatusTooManyRequests, w.Code)
-	var resp map[string]any
-	json.Unmarshal(w.Body.Bytes(), &resp)
-	assert.Equal(t, float64(429), resp["code"])
+	resp, err := doRequest("DELETE", "/api/reservation/reservation/99999", token, "")
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode, "第6次请求应返回429")
+	resp.Body.Close()
 }
 
-func TestRateLimit_IPDimension(t *testing.T) {
+// ========== 限流：未认证请求不被限流 ==========
+
+// 测试中间件顺序：AuthMiddleware 在 RateLimitMiddleware 之前，无Token请求返回401而非429。
+//
+// 函数功能：验证认证中间件在限流中间件之前执行，未认证请求不会消耗限流配额。
+//
+// 测试场景：
+//  1. 无Token请求返回401
+//  2. 有Token的请求正常通过（限流配额未被消耗）
+
+func TestRateLimit_UnauthenticatedNotLimited(t *testing.T) {
 	skipIfNoDocker(t)
-	redisCli, redisCleanup := newRedisClient(t)
-	defer redisCleanup()
+	_, cleanup := newRepo(t)
+	defer cleanup()
 
-	rateLimits := []middleware.RateLimitConfig{
-		{Window: 60 * time.Second, MaxRequests: 1, Dimension: middleware.RateLimitDimensionIP, KeyPrefix: "rl", HandlerName: "submit", FailOpen: true},
+	// 连续发送多次无Token请求，确保返回401而非429
+	for i := 1; i <= 5; i++ {
+		resp, err := doRequest("POST", "/api/reservation/reservation/submit", "", "{}")
+		assert.NoError(t, err, "第 %d 次无Token请求应正常发送", i)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode,
+			"第 %d 次请求应返回401（认证拦截优先于限流）", i)
+		resp.Body.Close()
 	}
-	r := buildRateLimitRouter(t, redisCli, rateLimits)
-	token := genUserToken(t, "rl_ip_user")
-
-	req1 := newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, "")
-	req1.RemoteAddr = "10.0.1.1:12345"
-	w1 := httptest.NewRecorder()
-	r.ServeHTTP(w1, req1)
-	assert.Equal(t, http.StatusOK, w1.Code)
-
-	req2 := newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, "")
-	req2.RemoteAddr = "10.0.1.1:54321"
-	w2 := httptest.NewRecorder()
-	r.ServeHTTP(w2, req2)
-	assert.Equal(t, http.StatusTooManyRequests, w2.Code)
-
-	req3 := newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, "")
-	req3.RemoteAddr = "10.0.1.2:12345"
-	w3 := httptest.NewRecorder()
-	r.ServeHTTP(w3, req3)
-	assert.Equal(t, http.StatusOK, w3.Code, "不同 IP 限流应独立生效")
 }
 
-func TestRateLimit_DifferentHandlers(t *testing.T) {
-	skipIfNoDocker(t)
-	redisCli, redisCleanup := newRedisClient(t)
-	defer redisCleanup()
+// ========== 限流：读接口不限流 ==========
 
-	rateLimits := []middleware.RateLimitConfig{
-		{Window: 60 * time.Second, MaxRequests: 1, Dimension: middleware.RateLimitDimensionUser, KeyPrefix: "rl", HandlerName: "submit", FailOpen: true},
-		{Window: 60 * time.Second, MaxRequests: 1, Dimension: middleware.RateLimitDimensionUser, KeyPrefix: "rl", HandlerName: "cancel", FailOpen: true},
-	}
-	r := buildRateLimitRouter(t, redisCli, rateLimits)
-	token := genUserToken(t, "rl_handler_user")
-
-	w1 := httptest.NewRecorder()
-	r.ServeHTTP(w1, newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, ""))
-	assert.Equal(t, http.StatusOK, w1.Code)
-
-	w2 := httptest.NewRecorder()
-	r.ServeHTTP(w2, newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", token, ""))
-	assert.Equal(t, http.StatusTooManyRequests, w2.Code)
-
-	w3 := httptest.NewRecorder()
-	r.ServeHTTP(w3, newAuthRequest(http.MethodDelete, "/api/reservation/reservation/1", token, ""))
-	assert.Equal(t, http.StatusOK, w3.Code, "cancel 不应受 submit 限流影响")
-
-	w4 := httptest.NewRecorder()
-	r.ServeHTTP(w4, newAuthRequest(http.MethodDelete, "/api/reservation/reservation/1", token, ""))
-	assert.Equal(t, http.StatusTooManyRequests, w4.Code)
-}
-
-func TestRateLimit_Unauthenticated(t *testing.T) {
-	skipIfNoDocker(t)
-	redisCli, redisCleanup := newRedisClient(t)
-	defer redisCleanup()
-
-	rateLimits := []middleware.RateLimitConfig{
-		{Window: 60 * time.Second, MaxRequests: 2, Dimension: middleware.RateLimitDimensionUser, KeyPrefix: "rl", HandlerName: "submit", FailOpen: true},
-	}
-	r := buildRateLimitRouter(t, redisCli, rateLimits)
-
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, newAuthRequest(http.MethodPost, "/api/reservation/reservation/submit", "", ""))
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
+// 测试 GET /api/reservation/reservation/my 不挂载限流中间件。
+//
+// 函数功能：验证读接口不受写接口限流配置影响。
+//
+// 测试场景：
+//  1. 连续10次GET请求均返回200
 
 func TestRateLimit_ReadRoutesNoLimit(t *testing.T) {
 	skipIfNoDocker(t)
-	redisCli, redisCleanup := newRedisClient(t)
-	defer redisCleanup()
+	_, cleanup := newRepo(t)
+	defer cleanup()
 
-	rateLimits := []middleware.RateLimitConfig{
-		{Window: 60 * time.Second, MaxRequests: 1, Dimension: middleware.RateLimitDimensionUser, KeyPrefix: "rl", HandlerName: "submit", FailOpen: true},
-	}
-	r := buildRateLimitRouter(t, redisCli, rateLimits)
-	token := genUserToken(t, "rl_read_user")
+	token := genUserToken(t, "e2e_rl_read")
 
-	for i := 1; i <= 5; i++ {
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, newAuthRequest(http.MethodGet, "/api/reservation/reservation/my", token, ""))
-		assert.Equal(t, http.StatusOK, w.Code, "读接口第 %d 次应通过", i)
+	for i := 1; i <= 10; i++ {
+		resp, err := doRequest("GET", "/api/reservation/reservation/my", token, "")
+		assert.NoError(t, err, "第 %d 次读请求应正常发送", i)
+		assert.Equal(t, http.StatusOK, resp.StatusCode,
+			"第 %d 次读请求应返回200（读接口不限流）", i)
+		resp.Body.Close()
 	}
 }

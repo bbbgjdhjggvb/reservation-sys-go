@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// 测试 service.go 文件中 func (s *AdminAuthService) Login(username, password string) (*AdminInfo, string, error)
+//
+// 函数功能：调用 gRPC 验证管理员凭据，成功后签发 JWT
+//
+// 测试场景：
+// 1. 登录成功 — 验证返回 AdminInfo 和 Token
+// 2. gRPC 错误 — 验证返回"账号验证服务不可用"
+// 3. 凭据无效 — 验证返回"用户名或密码错误"
 func TestAdminAuthService_Login(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

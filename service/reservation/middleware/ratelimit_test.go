@@ -41,8 +41,12 @@ func parseJSON(data []byte, v any) error {
 // 4.3.1 单元测试 —— Allow 函数
 // ====================================================================
 
-// TestAllow_NormalPass 场景1：正常通过
-// 在窗口内向同一用户发起 3 次请求，验证前 3 次均返回允许
+// TestAllow_NormalPass 测试 ratelimit.go 文件中 func Allow(client *redis.Client, key string, window time.Duration, max int64) (bool, error)
+//
+// 函数功能：基于滑动窗口判断当前请求是否允许通过
+//
+// 场景1：正常通过 — 在窗口内向同一用户发起 3 次请求，验证前 3 次均返回允许
+//  1. 验证 Allow 返回 true，不返回 error
 func TestAllow_NormalPass(t *testing.T) {
 	t.Parallel()
 	m := setupMiniredis(t)
@@ -175,8 +179,13 @@ func TestAllow_DifferentHandlersIndependent(t *testing.T) {
 // 4.3.2 中间件集成测试
 // ====================================================================
 
-// TestRateLimitMiddleware_WithAuthenticatedUser 场景1：带认证信息的请求
-// 在 Gin 上下文中注入 openid，验证中间件能正确提取并限流
+// TestRateLimitMiddleware_WithAuthenticatedUser 测试 ratelimit.go 文件中 func RateLimitMiddleware(client *redis.Client, config *RateLimitConfig) gin.HandlerFunc
+//
+// 函数功能：创建限流中间件，根据配置对请求进行频率限制
+//
+// 场景1：带认证信息的请求 — 在 Gin 上下文中注入 openid，验证中间件能正确提取并限流
+//  1. 第 1 次请求返回 200
+//  2. 第 2 次请求返回 429，响应体包含"请求过于频繁"
 func TestRateLimitMiddleware_WithAuthenticatedUser(t *testing.T) {
 	m := setupMiniredis(t)
 	defer m.Close()
@@ -266,8 +275,14 @@ func TestRateLimitMiddleware_IPDimension(t *testing.T) {
 	assert.Equal(t, 200, w3.Code, "不同 IP 的限流应独立生效")
 }
 
-// TestRateLimitMiddleware_ResponseHeadersAndStatus 场景3：响应头与状态码
-// 验证触发限流时返回 HTTP 429 状态码及正确的 JSON 错误体
+// TestRateLimitMiddleware_ResponseHeadersAndStatus 测试 RateLimitMiddleware 限流时返回的正确 HTTP 响应
+//
+// 函数功能：验证触发限流时返回 HTTP 429 状态码、application/json Content-Type 及正确的 JSON 错误体
+//
+// 场景3：响应头与状态码
+//  1. 验证状态码为 429
+//  2. 验证 Content-Type 为 application/json
+//  3. 验证响应体 code 为 429，msg 包含"请求过于频繁"
 func TestRateLimitMiddleware_ResponseHeadersAndStatus(t *testing.T) {
 	m := setupMiniredis(t)
 	defer m.Close()
@@ -520,8 +535,13 @@ func TestRateLimitMiddleware_RedisDown_FailClosed(t *testing.T) {
 // ====================================================================
 // 辅助函数测试 —— generateLimitKey
 // ====================================================================
+//
+// 测试 ratelimit.go 文件中 func generateLimitKey(c *gin.Context, config *RateLimitConfig) string
+//
+// 函数功能：根据限流维度（用户/IP）和配置生成 Redis Key
 
 // TestGenerateLimitKey_UserDimension 验证用户维度 Key 生成
+//  1. Key 格式为 ratelimit:user:<openid>:<handlerName>
 func TestGenerateLimitKey_UserDimension(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())

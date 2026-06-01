@@ -1,13 +1,26 @@
-// Package integration 提供数据库+Redis集成测试基础设施。
-// TestMain 管理单个 MySQL 容器和单个 Redis 容器的生命周期，所有测试共享。
+// Package integration 提供端到端集成测试基础设施。
+//
+// 测试前需通过 docker-compose 启动完整服务栈，测试通过 nginx (localhost:80) 发送真实 HTTP 请求，
+// 验证完整链路：
+//
+//	HTTP 请求 → nginx 反向代理 → 服务容器 → gRPC(服务间) → MySQL/Redis → 响应
+//
+// 运行方式（必须通过脚本，脚本负责启动/停止服务）:
+//
+//	bash scripts/e2e_test.sh              # 一键构建+测试+清理
+//	bash scripts/e2e_test.sh -run TestXxx # 运行指定测试
 package integration
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"math/rand"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,211 +28,67 @@ import (
 	reservationdb "reservation-sys/pkg/reservationdb"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 const (
-	testDBUser     = "res_user"
-	testDBPassword = "12345678"
-	testDBName     = "home_res"
+	e2eBaseURL   = "http://localhost"
+	e2eMySQLDSN  = "res_user:xSIn34sU7qQl31kQ3TVfcQ==@tcp(127.0.0.1:3307)/home_res?charset=utf8mb4&parseTime=True&loc=Local"
+	e2eRedisAddr = "127.0.0.1:6380"
+	e2eJWTSecret = "Y6Xoo746BoVCWFyFUVSqqboCfqo7QkC8A5CN7F9sOm0="
+	e2eJWTExpire = 24
 )
 
 var (
-	testMySQLDSN   string
-	testRedisAddr  string
-	mysqlCleanupFn func()
-	redisCleanupFn func()
+	e2eDB    *gorm.DB
+	e2eRedis *redis.Client
 )
 
+// 测试 能否正常连接到 nginx、mysql、redis
 func TestMain(m *testing.M) {
-	rand.Seed(time.Now().UnixNano())
+	// 检查服务是否已启动（由 scripts/e2e_test.sh 负责）
+	if !checkService(e2eBaseURL + "/health") {
+		fmt.Println("[e2e] 服务未启动，请先运行: bash scripts/e2e_test.sh")
+		os.Exit(1)
+	}
 
-	testMySQLDSN, mysqlCleanupFn = setupMySQLContainer()
-	testRedisAddr, redisCleanupFn = setupRedisContainer()
+	// 初始化 JWT（使用与线上相同的 secret）
+	jwt.InitUserJWT(e2eJWTSecret, e2eJWTExpire)
+	jwt.InitAdminJWT(e2eJWTSecret, e2eJWTExpire)
 
-	jwt.InitUserJWT("integration-test-user-secret", 24)
-	jwt.InitAdminJWT("integration-test-admin-secret", 24)
+	// 连接 MySQL
+	var err error
+	e2eDB, err = gorm.Open(mysql.Open(e2eMySQLDSN), &gorm.Config{})
+	if err != nil {
+		fmt.Printf("[e2e] 连接 MySQL 失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 连接 Redis
+	e2eRedis = redis.NewClient(&redis.Options{Addr: e2eRedisAddr})
+	if err := e2eRedis.Ping(e2eRedis.Context()).Err(); err != nil {
+		fmt.Printf("[e2e] 连接 Redis 失败: %v\n", err)
+		os.Exit(1)
+	}
 
 	code := m.Run()
 
-	if redisCleanupFn != nil {
-		redisCleanupFn()
-	}
-	if mysqlCleanupFn != nil {
-		mysqlCleanupFn()
-	}
+	e2eRedis.Close()
 	os.Exit(code)
 }
 
-// ---------- MySQL ----------
+// ---------- 服务就绪检测 ----------
 
-func setupMySQLContainer() (string, func()) {
-	if err := checkDocker(); err != nil {
-		fmt.Printf("[integration] Docker 不可用 (%v)，跳过 MySQL 容器启动\n", err)
-		return "", nil
-	}
-
-	port := fmt.Sprintf("%d", 33100+rand.Intn(100))
-	containerName := fmt.Sprintf("reservation-test-mysql-%d", time.Now().UnixNano())
-
-	cmd := exec.Command("docker", "run", "-d", "--rm",
-		"--name", containerName,
-		"-e", "MYSQL_ROOT_PASSWORD=root123",
-		"-p", fmt.Sprintf("%s:3306", port),
-		"mysql:8.0",
-		"--default-authentication-plugin=mysql_native_password",
-	)
-	output, err := cmd.CombinedOutput()
+func checkService(url string) bool {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
-		fmt.Printf("[integration] 启动 MySQL 容器失败: %v, output: %s\n", err, string(output))
-		return "", nil
+		return false
 	}
-	containerID := strings.TrimSpace(string(output))
-
-	cleanup := func() { exec.Command("docker", "stop", containerID).Run() }
-
-	rootDSN := fmt.Sprintf("root:root123@tcp(127.0.0.1:%s)/?charset=utf8mb4&parseTime=True&loc=Local", port)
-	var db *gorm.DB
-	for i := 0; i < 60; i++ {
-		db, err = gorm.Open(mysql.Open(rootDSN), &gorm.Config{})
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	if err != nil {
-		cleanup()
-		panic(fmt.Sprintf("MySQL 容器启动超时: %v", err))
-	}
-
-	setupSQLs := []string{
-		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", testDBName),
-		fmt.Sprintf("CREATE USER IF NOT EXISTS '%s'@'%%' IDENTIFIED BY '%s'", testDBUser, testDBPassword),
-		fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%'", testDBName, testDBUser),
-		"FLUSH PRIVILEGES",
-	}
-	for _, sql := range setupSQLs {
-		if err := db.Exec(sql).Error; err != nil {
-			cleanup()
-			panic(fmt.Sprintf("执行初始化 SQL 失败: %s, err: %v", sql, err))
-		}
-	}
-
-	userDSN := fmt.Sprintf("%s:%s@tcp(127.0.0.1:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		testDBUser, testDBPassword, port, testDBName)
-	testDB, err := gorm.Open(mysql.Open(userDSN), &gorm.Config{})
-	if err != nil {
-		cleanup()
-		panic(fmt.Sprintf("连接测试数据库失败: %v", err))
-	}
-	if err := runInitSQL(testDB); err != nil {
-		cleanup()
-		panic(fmt.Sprintf("创建表结构失败: %v", err))
-	}
-
-	return userDSN, cleanup
-}
-
-func runInitSQL(db *gorm.DB) error {
-	sqls := []string{
-		`CREATE TABLE IF NOT EXISTS reservation_orders (
-			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			order_no VARCHAR(50) NOT NULL COMMENT '订单号',
-			open_id VARCHAR(100) NOT NULL COMMENT '微信用户标识',
-			applicant_name VARCHAR(50) NOT NULL COMMENT '申请人姓名',
-			alumni_association VARCHAR(100) NOT NULL COMMENT '所属学院校友会',
-			year INT NOT NULL COMMENT '入学年份',
-			major VARCHAR(30) NOT NULL COMMENT '专业',
-			reason VARCHAR(500) NOT NULL COMMENT '会议内容/预约理由',
-			phone VARCHAR(20) NOT NULL COMMENT '联系电话',
-			total_slots TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '预约时段数量',
-			status TINYINT NOT NULL DEFAULT 0 COMMENT '整体状态',
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			PRIMARY KEY (id),
-			UNIQUE KEY idx_orders_order_no (order_no),
-			KEY idx_orders_open_id (open_id),
-			KEY idx_orders_status (status)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-
-		`CREATE TABLE IF NOT EXISTS reservation_slots (
-			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			order_id BIGINT UNSIGNED NOT NULL COMMENT '关联订单ID',
-			start_time DATETIME NOT NULL COMMENT '开始时间',
-			end_time DATETIME NOT NULL COMMENT '结束时间',
-			status TINYINT NOT NULL DEFAULT 0 COMMENT '时段状态',
-			password VARCHAR(20) DEFAULT NULL COMMENT '门锁动态密码',
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			PRIMARY KEY (id),
-			KEY idx_slots_order_id (order_id),
-			KEY idx_slots_time_range (start_time, end_time),
-			KEY idx_slots_status (status),
-			CONSTRAINT fk_slots_order_id FOREIGN KEY (order_id) REFERENCES reservation_orders(id) ON DELETE CASCADE
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-
-		`CREATE TABLE IF NOT EXISTS review_records (
-			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			order_id BIGINT UNSIGNED NOT NULL COMMENT '关联订单ID',
-			reviewer_id BIGINT UNSIGNED NOT NULL COMMENT '审核人ID',
-			reviewer_role TINYINT NOT NULL COMMENT '审核人角色',
-			action TINYINT NOT NULL COMMENT '操作: 1-通过, 2-拒绝',
-			comment VARCHAR(500) DEFAULT NULL COMMENT '审核意见',
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (id),
-			KEY idx_review_records_order_id (order_id)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-	}
-	for _, s := range sqls {
-		if err := db.Exec(s).Error; err != nil {
-			return fmt.Errorf("create table: %w", err)
-		}
-	}
-	return nil
-}
-
-// ---------- Redis ----------
-
-func setupRedisContainer() (string, func()) {
-	if err := checkDocker(); err != nil {
-		fmt.Printf("[integration] Docker 不可用 (%v)，跳过 Redis 容器启动\n", err)
-		return "", nil
-	}
-
-	port := fmt.Sprintf("%d", 63800+rand.Intn(100))
-	containerName := fmt.Sprintf("reservation-test-redis-%d", time.Now().UnixNano())
-
-	cmd := exec.Command("docker", "run", "-d", "--rm",
-		"--name", containerName,
-		"-p", fmt.Sprintf("%s:6379", port),
-		"redis:7-alpine",
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Printf("[integration] 启动 Redis 容器失败: %v, output: %s\n", err, string(output))
-		return "", nil
-	}
-	containerID := strings.TrimSpace(string(output))
-
-	cleanup := func() { exec.Command("docker", "stop", containerID).Run() }
-
-	addr := fmt.Sprintf("127.0.0.1:%s", port)
-	client := redis.NewClient(&redis.Options{Addr: addr})
-	ctx := client.Context()
-	for i := 0; i < 30; i++ {
-		if err := client.Ping(ctx).Err(); err == nil {
-			break
-		}
-		if i == 29 {
-			cleanup()
-			panic(fmt.Sprintf("Redis 容器启动超时: %v", err))
-		}
-		time.Sleep(time.Second)
-	}
-	client.Close()
-
-	return addr, cleanup
+	resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
 }
 
 // ---------- 测试辅助 ----------
@@ -228,7 +97,7 @@ func setupRedisContainer() (string, func()) {
 func skipIfNoDocker(t *testing.T) {
 	t.Helper()
 	if err := checkDocker(); err != nil {
-		t.Skip("Docker 不可用，跳过集成测试")
+		t.Skip("Docker 不可用，跳过 E2E 测试")
 	}
 }
 
@@ -239,50 +108,33 @@ func checkDocker() error {
 	return exec.Command("docker", "info").Run()
 }
 
-// newDB 连接共享 MySQL 容器，返回 GORM DB 实例。
-func newDB(t *testing.T) *gorm.DB {
-	t.Helper()
-	skipIfNoDocker(t)
-	if testMySQLDSN == "" {
-		t.Skip("MySQL 容器未启动")
-	}
-	db, err := gorm.Open(mysql.Open(testMySQLDSN), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("连接测试数据库失败: %v", err)
-	}
-	return db
+// e2eHTTPClient 返回用于请求 nginx 的 HTTP 客户端。
+func e2eHTTPClient() *http.Client {
+	return &http.Client{Timeout: 10 * time.Second}
 }
 
-// newRepo 返回连接共享 MySQL 的 repository 和清理函数（截断所有表）。
+// newRepo 返回连接 e2e MySQL 的 repository 和清理函数（截断所有表）。
 func newRepo(t *testing.T) (reservationdb.Repository, func()) {
 	t.Helper()
-	db := newDB(t)
-	repo := reservationdb.NewRepository(db)
+	skipIfNoDocker(t)
+	repo := reservationdb.NewRepository(e2eDB)
 	cleanup := func() {
-		db.Exec("DELETE FROM review_records")
-		db.Exec("DELETE FROM reservation_slots")
-		db.Exec("DELETE FROM reservation_orders")
+		e2eDB.Exec("DELETE FROM review_records")
+		e2eDB.Exec("DELETE FROM reservation_slots")
+		e2eDB.Exec("DELETE FROM reservation_orders")
 	}
 	return repo, cleanup
 }
 
-// newRedisClient 连接共享 Redis 容器，返回客户端和清库清理函数。
+// newRedisClient 返回连接 e2e Redis 的客户端和清库清理函数。
 func newRedisClient(t *testing.T) (*redis.Client, func()) {
 	t.Helper()
 	skipIfNoDocker(t)
-	if testRedisAddr == "" {
-		t.Skip("Redis 容器未启动")
-	}
-	client := redis.NewClient(&redis.Options{Addr: testRedisAddr})
-	ctx := client.Context()
-	if err := client.Ping(ctx).Err(); err != nil {
-		t.Fatalf("连接测试 Redis 失败: %v", err)
-	}
+	ctx := e2eRedis.Context()
 	cleanup := func() {
-		client.FlushDB(ctx)
-		client.Close()
+		e2eRedis.FlushDB(ctx)
 	}
-	return client, cleanup
+	return e2eRedis, cleanup
 }
 
 // mustParseTime 解析时间字符串，失败时 panic。
@@ -312,4 +164,113 @@ func genAdminToken(t *testing.T, adminID uint, username string, role int) string
 		t.Fatalf("生成管理员 token 失败: %v", err)
 	}
 	return token
+}
+
+// ---------- HTTP 请求辅助 ----------
+
+// doRequest 向 nginx 发送 HTTP 请求并返回响应。
+//
+// 参数:
+//   - method: HTTP 方法（GET/POST/PUT/DELETE）
+//   - path: 请求路径（如 /api/reservation/reservation/submit）
+//   - token: JWT Bearer Token，为空时不添加 Authorization 头
+//   - body: 请求体 JSON 字符串，为空时无 body
+//
+// 返回值:
+//   - *http.Response: HTTP 响应
+//   - error: 请求失败时返回错误
+func doRequest(method, path, token, body string) (*http.Response, error) {
+	url := e2eBaseURL + path
+	var reqBody io.Reader
+	if body != "" {
+		reqBody = bytes.NewBufferString(body)
+	}
+
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	return e2eHTTPClient().Do(req)
+}
+
+// doRequestJSON 发送请求并将 JSON 响应解析到 v。
+func doRequestJSON(t *testing.T, method, path, token, body string, v any) *http.Response {
+	t.Helper()
+	resp, err := doRequest(method, path, token, body)
+	require.NoError(t, err, "HTTP 请求失败")
+	if v != nil {
+		defer resp.Body.Close()
+		respBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err, "读取响应体失败")
+		if len(respBytes) > 0 {
+			require.NoError(t, json.Unmarshal(respBytes, v), "解析 JSON 响应失败")
+		}
+	}
+	return resp
+}
+
+// assertOK 断言响应状态码为 200。
+func assertOK(t *testing.T, resp *http.Response, msgAndArgs ...any) {
+	t.Helper()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("期望 200, 实际 %d, body: %s", resp.StatusCode, string(body))
+	}
+}
+
+// e2eSlotCounter 为每个 createOrder 调用分配唯一时段，避免固定时间冲突。
+var e2eSlotCounter atomic.Int64
+
+// createOrder 通过 repository 直接创建订单（用于测试数据准备）。
+func createOrder(t *testing.T, repo reservationdb.Repository, status int, openid string) uint {
+	t.Helper()
+	n := int(e2eSlotCounter.Add(1))
+	start := time.Date(2026, 7, 1, 8, 0, 0, 0, time.Local).Add(time.Duration((n-1)*2) * time.Hour)
+	end := start.Add(2 * time.Hour)
+	order := &reservationdb.ReservationOrder{
+		OrderNo:           fmt.Sprintf("R_E2E_%d_%d", status, time.Now().UnixNano()),
+		OpenID:            openid,
+		ApplicantName:     "测试用户",
+		AlumniAssociation: "校友会",
+		Year:              2020,
+		Major:             "CS",
+		Reason:            "E2E测试",
+		Phone:             "13800138000",
+		TotalSlots:        1,
+		Status:            status,
+	}
+	slots := []reservationdb.ReservationSlot{
+		{StartTime: start, EndTime: end, Status: status},
+	}
+	err := repo.CreateOrderWithLock(order, slots)
+	require.NoError(t, err)
+	return order.ID
+}
+
+// httpStatus 断言响应状态码为期望值。
+func httpStatus(t *testing.T, resp *http.Response, expected int) {
+	t.Helper()
+	require.Equal(t, expected, resp.StatusCode, "期望 %d, 实际 %d", expected, resp.StatusCode)
+}
+
+// readBody 读取响应体为字符串。
+func readBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return string(b)
+}
+
+// strContains 断言字符串包含子串。
+func strContains(t *testing.T, s, substr string) {
+	t.Helper()
+	if !strings.Contains(s, substr) {
+		t.Fatalf("期望包含 %q, 实际: %s", substr, s)
+	}
 }

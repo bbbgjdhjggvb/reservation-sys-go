@@ -24,6 +24,16 @@ func generateValidUserToken(t *testing.T) string {
 	return token
 }
 
+// 测试 middleware.go 文件中的 func AuthMiddleware() gin.HandlerFunc
+//
+// 函数功能：验证请求中的 Bearer Token，解析 openid 并注入 Gin 上下文
+//
+// 测试场景：
+// 1. 无 Authorization 头 — 返回 401 "未授权"
+// 2. 格式错误（无 Bearer 前缀） — 返回 401 "Token格式错误"
+// 3. 格式错误（错误前缀） — 返回 401 "Token格式错误"
+// 4. Token 无效 — 返回 401 "Token 无效或已过期"
+// 5. 有效 Token — 返回 200，openid 正确注入上下文
 func TestAuthMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

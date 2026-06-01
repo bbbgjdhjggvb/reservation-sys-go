@@ -54,6 +54,13 @@ func TestInitRedis_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// 测试 platform.go 文件中 func InitRedis(cfg *config.RedisConfig) (*redis.Client, error)
+//
+// 函数功能：使用密码连接到 Redis
+//
+// 测试场景：
+// 1. 通过密码认证成功连接 Redis
+//  1. 验证 Ping 成功
 func TestInitRedis_WithPassword(t *testing.T) {
 	mr := miniredis.RunT(t)
 	defer mr.Close()
@@ -75,6 +82,13 @@ func TestInitRedis_WithPassword(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// 测试 platform.go 文件中 func InitRedis(cfg *config.RedisConfig) (*redis.Client, error)
+//
+// 函数功能：验证指定 DB 编号连接到 Redis
+//
+// 测试场景：
+// 1. 通过 DB 编号 2 成功连接 Redis
+//  1. 验证 Ping 成功
 func TestInitRedis_WithDB(t *testing.T) {
 	mr := miniredis.RunT(t)
 	defer mr.Close()
@@ -94,6 +108,14 @@ func TestInitRedis_WithDB(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// 测试 platform.go 文件中 func InitRedis(cfg *config.RedisConfig) (*redis.Client, error)
+//
+// 函数功能：验证连接池正常工作（连续多次读写操作）
+//
+// 测试场景：
+// 1. 连续 10 次 Set/Get 操作成功
+//  1. 验证每次 Set 不返回错误
+//  2. 验证每次 Get 返回的值与 Set 的值一致
 func TestInitRedis_ConnectionPool(t *testing.T) {
 	mr := miniredis.RunT(t)
 	defer mr.Close()

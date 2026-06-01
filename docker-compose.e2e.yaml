@@ -1,0 +1,130 @@
+# E2E 集成测试 Docker Compose 配置
+# 使用方法: docker compose -f docker-compose.e2e.yaml up -d --build
+#
+# 与 docker-compose.local.yaml 的区别:
+#   1. MySQL/Redis 暴露端口给宿主机（用于测试验证）
+#   2. 不挂载前端静态文件（仅 API 测试）
+#   3. 不挂载 SSL 证书
+#   4. nginx 添加 health 端点
+
+version: "3.8"
+
+services:
+  # ============ 基础设施 ============
+
+  mysql:
+    image: mysql:8.0
+    container_name: reservation-e2e-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - e2e_mysql_data:/var/lib/mysql
+      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-connect='SET NAMES utf8mb4'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - e2e-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: reservation-e2e-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - e2e_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - e2e-net
+
+  # ============ 应用服务 ============
+
+  gateway:
+    build:
+      context: .
+      dockerfile: service/gateway/Dockerfile
+    container_name: reservation-e2e-gateway
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=service/gateway/configs/config_v1.local.yaml
+    volumes:
+      - ./service/gateway/configs:/app/service/gateway/configs:ro
+    networks:
+      - e2e-net
+
+  reservation:
+    build:
+      context: .
+      dockerfile: service/reservation/Dockerfile
+    container_name: reservation-e2e-reservation
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=service/reservation/configs/config_v2.local.yaml
+    volumes:
+      - ./service/reservation/configs:/app/service/reservation/configs:ro
+    networks:
+      - e2e-net
+
+  admin:
+    build:
+      context: .
+      dockerfile: service/admin/Dockerfile
+    container_name: reservation-e2e-admin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      gateway:
+        condition: service_started
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=service/admin/configs/config_v3.local.yaml
+    volumes:
+      - ./service/admin/configs:/app/service/admin/configs:ro
+    networks:
+      - e2e-net
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: reservation-e2e-nginx
+    restart: unless-stopped
+    depends_on:
+      - gateway
+      - reservation
+      - admin
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
+    networks:
+      - e2e-net
+
+networks:
+  e2e-net:
+    driver: bridge
+
+volumes:
+  e2e_mysql_data:
+  e2e_redis_data:
