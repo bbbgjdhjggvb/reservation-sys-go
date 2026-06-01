@@ -51,9 +51,7 @@ services:
   # ============ 应用服务 ============
 
   gateway:
-    build:
-      context: .
-      dockerfile: service/gateway/Dockerfile
+    image: ${GATEWAY_IMAGE:-reservation-gateway:latest}
     container_name: reservation-e2e-gateway
     restart: unless-stopped
     depends_on:
@@ -70,9 +68,7 @@ services:
       - e2e-net
 
   reservation:
-    build:
-      context: .
-      dockerfile: service/reservation/Dockerfile
+    image: ${RESERVATION_IMAGE:-reservation-reservation:latest}
     container_name: reservation-e2e-reservation
     restart: unless-stopped
     depends_on:
@@ -87,9 +83,7 @@ services:
       - e2e-net
 
   admin:
-    build:
-      context: .
-      dockerfile: service/admin/Dockerfile
+    image: ${ADMIN_IMAGE:-reservation-admin:latest}
     container_name: reservation-e2e-admin
     restart: unless-stopped
     depends_on:
