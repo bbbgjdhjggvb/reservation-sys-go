@@ -4,12 +4,15 @@ import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
 import { useAdminOrders } from '@/composables/useAdminOrders'
 import { adminApi } from '@/api/client'
+import type { OrderResp } from '@reservation/shared'
 import AdminHeader from '@/components/AdminHeader.vue'
 import StatusTabs from '@/components/StatusTabs.vue'
 import AdminOrderCard from '@/components/AdminOrderCard.vue'
 import Pagination from '@/components/Pagination.vue'
 import OrderDetailModal from '@/components/OrderDetailModal.vue'
 import ReviewModal from '@/components/ReviewModal.vue'
+import ReviewInfoModal from '@/components/ReviewInfoModal.vue'
+import PasswordModal from '@/components/PasswordModal.vue'
 
 const router = useRouter()
 const admin = useAdminStore()
@@ -21,6 +24,10 @@ const showReviewModal = ref(false)
 const reviewAction = ref(1)
 const reviewActionLabel = ref('')
 const reviewOrderId = ref(0)
+
+// 新增：审核信息 & 设置密码弹窗
+const reviewInfoOrderId = ref<number | null>(null)
+const passwordOrder = ref<OrderResp | null>(null)
 
 const toastMsg = ref('')
 const toastError = ref(false)
@@ -86,8 +93,22 @@ async function handleNotify(orderId: number) {
   }
 }
 
+function openReviewInfo(id: number) {
+  reviewInfoOrderId.value = id
+}
+
+function openSetPassword(order: OrderResp) {
+  passwordOrder.value = order
+}
+
 function handleDetailUpdated() {
   closeDetail()
+  store.fetchOrders()
+}
+
+function handlePasswordSaved() {
+  passwordOrder.value = null
+  showToast('密码已保存')
   store.fetchOrders()
 }
 </script>
@@ -122,6 +143,8 @@ function handleDetailUpdated() {
           :admin-role="admin.info?.role || 0"
           @show-detail="openDetail"
           @review="(id, action) => openReview(id, action)"
+          @review-info="openReviewInfo"
+          @set-password="openSetPassword"
           @notify-user="handleNotify"
         />
       </div>
@@ -136,9 +159,7 @@ function handleDetailUpdated() {
 
     <OrderDetailModal
       :order-id="detailOrderId"
-      :admin-role="admin.info?.role || 0"
       @close="closeDetail"
-      @updated="handleDetailUpdated"
     />
 
     <ReviewModal
@@ -147,6 +168,19 @@ function handleDetailUpdated() {
       :action-label="reviewActionLabel"
       @close="showReviewModal = false"
       @confirm="confirmReview"
+    />
+
+    <ReviewInfoModal
+      :visible="reviewInfoOrderId !== null"
+      :order-id="reviewInfoOrderId"
+      @close="reviewInfoOrderId = null"
+    />
+
+    <PasswordModal
+      :visible="passwordOrder !== null"
+      :order="passwordOrder"
+      @close="passwordOrder = null"
+      @saved="handlePasswordSaved"
     />
 
     <!-- Toast -->
