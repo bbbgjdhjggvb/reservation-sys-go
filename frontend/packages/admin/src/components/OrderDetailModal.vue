@@ -49,17 +49,19 @@ function hasPassword(order: OrderResp): boolean {
 }
 
 function showPasswordForm(order: OrderResp, role: number): boolean {
-  return order.status === 1 && role === 1
+  return order.status === 5 && role === 1
 }
 
 function showNotifyBtn(order: OrderResp, role: number): boolean {
-  return order.status === 1 && role === 1 && hasPassword(order)
+  return order.status === 5 && role === 1 && hasPassword(order)
 }
 
 const STATUS_BADGE: Record<number, string> = {
-  0: 'bg-yellow-100 text-yellow-700',
-  1: 'bg-green-100 text-green-600',
-  5: 'bg-blue-100 text-blue-700',
+  1: 'bg-yellow-100 text-yellow-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-red-100 text-red-600',
+  4: 'bg-red-100 text-red-600',
+  5: 'bg-green-100 text-green-600',
   6: 'bg-red-100 text-red-600',
   7: 'bg-red-100 text-red-600',
 }
