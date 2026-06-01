@@ -37,13 +37,3 @@ func InitDB(cfg *config.MySQLConfig) (*gorm.DB, error) {
 	log.Println("[info][pkg/platform/db]: MySQL 连接成功！")
 	return db, nil
 }
-
-// AutoMigrate 自动迁移表结构
-// 由各模块在 InitModule 时调用，保持 platform 层不依赖业务模型
-func AutoMigrate(db *gorm.DB, models ...any) error {
-	if err := db.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("[error][pkg/platform/db]: 自动迁移表格失败: %w", err)
-	}
-	log.Println("[info][pkg/platform/db]: 自动迁移表格成功")
-	return nil
-}

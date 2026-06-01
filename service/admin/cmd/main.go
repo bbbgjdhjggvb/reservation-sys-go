@@ -3,6 +3,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"os"
 
 	"reservation-sys/pkg/grpc"
@@ -45,8 +46,22 @@ func main() {
 		log.Fatalf("[admin] 数据库初始化失败: %v", err)
 	}
 
-	// 初始化共享预约数据库模块
-	if err := reservationdb.InitModule(db); err != nil {
+	// 初始化共享预约数据库模块（可能因 reservation 服务并发迁移而失败，重试几次）
+	initModuleWithRetry := func(maxRetries int) error {
+		for i := 0; i < maxRetries; i++ {
+			if err := reservationdb.InitModule(db); err != nil {
+				if i < maxRetries-1 {
+					log.Printf("[admin] 预约数据库模块初始化失败(第%d次): %v，等待重试...", i+1, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				return err
+			}
+			return nil
+		}
+		return nil
+	}
+	if err := initModuleWithRetry(5); err != nil {
 		log.Fatalf("[admin] 预约数据库模块初始化失败: %v", err)
 	}
 
