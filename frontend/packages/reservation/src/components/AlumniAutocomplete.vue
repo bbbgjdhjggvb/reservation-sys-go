@@ -80,7 +80,7 @@ function fuzzyScore(query: string, target: string): number {
 
 function filterAlumni(query: string) {
   if (!query.trim()) {
-    filteredOptions.value = ALUMNI_OPTIONS.slice(0, 12)
+    filteredOptions.value = ALUMNI_OPTIONS
     return
   }
   const scored = ALUMNI_OPTIONS.map(opt => ({ opt, score: fuzzyScore(query, opt) }))
