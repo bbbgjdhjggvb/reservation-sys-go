@@ -74,6 +74,15 @@ go generate ./...
 
 Repository 接口定义在 `pkg/reservationdb/repository.go`，GORM 实现，通过 `GetRepository()` 单例访问（未初始化则 panic）。状态转换使用乐观锁（`WHERE status = fromStatus`），提交预约使用 `SELECT ... FOR UPDATE` 防重复。
 
+**数据库表结构统一由 `deploy/mysql/init.sql` 管理**，不使用 GORM AutoMigrate。原因：
+- AutoMigrate 无法创建数据库、用户、权限（`CREATE DATABASE` / `CREATE USER` / `GRANT`）
+- AutoMigrate 无法插入种子数据（管理员账号等）
+- 多副本启动时并发 DDL 存在风险
+- 隐式 DDL 变更无法在 PR 中审查
+- `init.sql` 显式、可审计、功能完整，适配 Docker `/docker-entrypoint-initdb.d/` 机制
+
+Gateway 服务的 `home_xy` 数据库（users、admins 表）同样由 `init.sql` 管理，`auth.InitModule` 和 `auth.InitAdminModule` 仅创建服务实例，不执行表迁移。
+
 ## 测试
 
 - 单元测试：放在对应包内，使用 `gomock` / `sqlmock` / `miniredis` + `testify/assert`，handler 测试用 `httptest.NewRecorder()` 配合 Gin
