@@ -15,7 +15,7 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: (to: any) => ({ path: '/', query: to.query, hash: to.hash }),
+    redirect: (to: RouteLocationNormalized) => ({ path: '/', query: to.query, hash: to.hash }),
   },
 ]
 
