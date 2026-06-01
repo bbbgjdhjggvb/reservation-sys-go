@@ -5,6 +5,16 @@ export interface ApiResponse<T = unknown> {
   data: T
 }
 
+// ========== Rate Limit ==========
+/** HTTP 429 限流响应状态码 */
+export const RATE_LIMIT_CODE = 429
+
+/** 各接口限流阈值（与后端 Redis 滑动窗口配置保持一致） */
+export const RATE_LIMIT_CONFIG = {
+  submit: { windowSec: 60, maxUserRequests: 3, maxIpRequests: 10 },
+  cancel: { windowSec: 60, maxUserRequests: 5 },
+} as const
+
 // ========== Time Slots ==========
 export interface TimeSlotReq {
   start_time: string // "2026-01-01 08:00:00"

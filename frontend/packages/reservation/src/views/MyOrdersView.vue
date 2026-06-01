@@ -149,6 +149,9 @@ onMounted(loadOrders)
                   {{ cancelling ? '取消中…' : '确认取消' }}
                 </button>
               </div>
+              <p class="mt-3 text-xs text-gray-400 text-center">
+                请勿频繁操作
+              </p>
             </div>
           </div>
         </Transition>
