@@ -156,6 +156,9 @@ function handleSubmit() {
           确定提交
         </button>
       </div>
+      <p class="mt-3 text-xs text-gray-400 text-center">
+        请勿频繁操作
+      </p>
     </form>
   </div>
 </template>

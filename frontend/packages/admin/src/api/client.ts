@@ -1,5 +1,6 @@
 import { useAdminStore } from '@/stores/admin'
 import type { ApiResponse } from '@reservation/shared'
+import { RATE_LIMIT_CODE } from '@reservation/shared'
 import type { AdminLoginResp, AdminInfoResp, OrderListResp, OrderDetailResp } from '../types'
 
 const BASE = '/api/admin'
@@ -23,10 +24,21 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new Error('Unauthorized')
   }
 
+  // HTTP 429 限流
+  if (res.status === RATE_LIMIT_CODE) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.msg || '请勿频繁操作')
+  }
+
   const data: ApiResponse<T> = await res.json()
 
-  if (data.code !== 200) {
+  if (data.code !== RATE_LIMIT_CODE && data.code !== 200) {
     throw new Error(data.msg || '请求失败')
+  }
+
+  // 业务 code 为 429
+  if (data.code === RATE_LIMIT_CODE) {
+    throw new Error(data.msg || '请勿频繁操作')
   }
 
   return data.data as T
