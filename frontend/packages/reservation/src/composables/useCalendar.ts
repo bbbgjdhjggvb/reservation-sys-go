@@ -1,52 +1,60 @@
 import { ref, reactive, computed } from 'vue'
-import { getMonday, addDays, formatDate, isPastDay, isBeyondBookable, isSlotInPast, extractTime } from '@/utils/date'
+import { addDays, formatDate, isPastDay, isBeyondBookable, isSlotInPast, extractTime } from '@/utils/date'
 import { api } from '@/api/client'
 import { MAX_SLOTS, WEEKDAYS, TIME_SLOTS } from '@reservation/shared'
 import type { SelectedSlot, OccupiedSlot } from '@reservation/shared'
 
+// Number of days visible in the date axis (today + 13 = 14 days)
+const VISIBLE_DAY_COUNT = 14
+
 // Module-level state — shared across all components that call useCalendar()
-const currentWeekStart = ref(getMonday(new Date()))
+const activeDayIndex = ref(0)
 const selectedSlots = ref<SelectedSlot[]>([])
 const occupiedSlots = reactive<Record<string, OccupiedSlot[]>>({})
 
 export function useCalendar() {
 
-  const weekDays = computed(() => {
-    return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart.value, i))
+  // 14 days starting from today
+  const visibleDays = computed(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return Array.from({ length: VISIBLE_DAY_COUNT }, (_, i) => addDays(today, i))
   })
 
-  const weekLabel = computed(() => {
-    const end = addDays(currentWeekStart.value, 6)
-    const sm = currentWeekStart.value.getMonth() + 1
-    const sd = currentWeekStart.value.getDate()
-    const em = end.getMonth() + 1
-    const ed = end.getDate()
-    const sy = currentWeekStart.value.getFullYear()
-    const ey = end.getFullYear()
-    if (sy !== ey) {
-      return `${sy}年${sm}月${sd}日 — ${ey}年${em}月${ed}日`
-    }
-    return `${sy}年${sm}月${sd}日 — ${em}月${ed}日`
+  // Human-readable label for the active day (e.g. "今天 6月1日", "明天 6月2日", "周三 6月3日")
+  const activeDayLabel = computed(() => {
+    const day = visibleDays.value[activeDayIndex.value]
+    if (!day) return ''
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const diff = Math.round((day.getTime() - today.getTime()) / 86400000)
+    if (diff === 0) return `今天 ${day.getMonth() + 1}月${day.getDate()}日`
+    if (diff === 1) return `明天 ${day.getMonth() + 1}月${day.getDate()}日`
+    // Map Sunday=0..Saturday=6 to Monday=0..Sunday=6
+    const dayOfWeek = day.getDay()
+    const adjustedDow = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    return `周${WEEKDAYS[adjustedDow]} ${day.getMonth() + 1}月${day.getDate()}日`
   })
 
-  const canGoPrev = computed(() => {
-    const today = getMonday(new Date())
-    return currentWeekStart.value > today
+  // Whether the active day falls in "next week" relative to today
+  const isNextWeek = computed(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dayOfWeek = today.getDay() || 7 // Mon=1..Sun=7
+    const daysUntilNextMonday = 8 - dayOfWeek
+    const nextMonday = addDays(today, daysUntilNextMonday)
+    const active = visibleDays.value[activeDayIndex.value]
+    return active ? active >= nextMonday : false
   })
 
-  const canGoNext = computed(() => {
-    const limit = addDays(new Date(), 13)
-    return addDays(currentWeekStart.value, 6) < limit
+  // Formatted date string for the active day (YYYY-MM-DD)
+  const activeDateStr = computed(() => {
+    const day = visibleDays.value[activeDayIndex.value]
+    return day ? formatDate(day) : ''
   })
-
-  function changeWeek(delta: number) {
-    currentWeekStart.value = addDays(currentWeekStart.value, delta * 7)
-    selectedSlots.value = []
-    fetchOccupiedSlots()
-  }
 
   async function fetchOccupiedSlots() {
-    const dates = weekDays.value.map(d => formatDate(d))
+    const dates = visibleDays.value.map(d => formatDate(d))
     const promises = dates.map(async (ds) => {
       if (occupiedSlots[ds] !== undefined) return
       try {
@@ -119,19 +127,22 @@ export function useCalendar() {
 
   async function resetAndRefresh() {
     resetSelection()
+    activeDayIndex.value = 0
     clearOccupiedCache()
     await fetchOccupiedSlots()
   }
 
   return {
-    currentWeekStart,
+    // New: 14-day daily model
+    visibleDays,
+    activeDayIndex,
+    activeDayLabel,
+    activeDateStr,
+    isNextWeek,
+
+    // Unchanged
     selectedSlots,
     occupiedSlots,
-    weekDays,
-    weekLabel,
-    canGoPrev,
-    canGoNext,
-    changeWeek,
     fetchOccupiedSlots,
     getCellState,
     toggleSlot,
@@ -141,7 +152,6 @@ export function useCalendar() {
     resetSelection,
     resetAndRefresh,
     MAX_SLOTS,
-    WEEKDAYS,
     TIME_SLOTS,
   }
 }
