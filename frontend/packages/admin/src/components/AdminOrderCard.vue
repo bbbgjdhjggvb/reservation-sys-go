@@ -65,7 +65,7 @@ function onReview(action: number) {
 
     <div class="text-xs text-gray-500 space-y-0.5 mb-3">
       <p>{{ order.alumni_association }} | {{ order.year }}级 | {{ order.major }}</p>
-      <p>{{ order.phone }}</p>
+      <p>{{ order.phone }} | {{ order.attendee_count }} 人</p>
       <p v-for="s in order.slots" :key="s.id" class="text-gray-600">{{ s.start_time }} ~ {{ s.end_time }}</p>
     </div>
 

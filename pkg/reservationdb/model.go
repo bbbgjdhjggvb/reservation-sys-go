@@ -61,6 +61,7 @@ func StatusText(code int) string {
 //		`major` VARCHAR(30) NOT NULL,
 //		`reason` VARCHAR(500) NOT NULL,
 //		`phone` VARCHAR(20) NOT NULL,
+//		`attendee_count` TINYINT UNSIGNED NOT NULL DEFAULT 1,
 //		`total_slots` TINYINT UNSIGNED NOT NULL DEFAULT 1,
 //		`status` TINYINT DEFAULT 1,
 //		`created_at` DATETIME(3) NULL,
@@ -81,6 +82,7 @@ type ReservationOrder struct {
 	Major             string    `gorm:"type:varchar(30);not null" json:"major"`                      // 专业
 	Reason            string    `gorm:"type:varchar(500);not null" json:"reason"`                    // 申请理由（会议内容）
 	Phone             string    `gorm:"type:varchar(20);not null" json:"phone"`                      // 手机号码
+	AttendeeCount     int       `gorm:"type:tinyint unsigned;not null;default:1" json:"attendee_count"` // 会议人数
 	TotalSlots        int       `gorm:"type:tinyint unsigned;not null;default:1" json:"total_slots"` // 预约的时间段数量
 	Status            int       `gorm:"type:tinyint;default:1" json:"status"`                        // 预约请求的变化状态
 	CreatedAt         time.Time `json:"created_at"`

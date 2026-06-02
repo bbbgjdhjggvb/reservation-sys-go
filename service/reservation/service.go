@@ -79,6 +79,7 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 		Major:             req.Major,
 		Reason:            req.Reason,
 		Phone:             req.Phone,
+		AttendeeCount:     req.AttendeeCount,
 		TotalSlots:        len(mergedSlots),
 		Status:            reservationdb.StatusPendingLevel1,
 	}

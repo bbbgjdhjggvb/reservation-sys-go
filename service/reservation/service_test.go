@@ -66,6 +66,7 @@ func TestReservationService_Submit(t *testing.T) {
 		Major:             "计算机科学",
 		Reason:            "举办活动",
 		Phone:             "13800138000",
+		AttendeeCount:     10,
 	}
 
 	tests := []struct {

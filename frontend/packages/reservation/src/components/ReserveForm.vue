@@ -20,6 +20,7 @@ const year = ref('')
 const alumniValue = ref('')
 const major = ref('')
 const phone = ref('')
+const attendeeCount = ref('')
 const reason = ref('')
 
 function handleSubmit() {
@@ -29,6 +30,7 @@ function handleSubmit() {
   if (!major.value.trim()) { showToast('请填写专业', 'error'); return }
   if (!phone.value.trim() || !/^\d{11}$/.test(phone.value)) { showToast('请填写正确的手机号码（11位数字）', 'error'); return }
   if (!reason.value.trim()) { showToast('请填写借用事由', 'error'); return }
+  if (!attendeeCount.value.trim() || !/^\d+$/.test(attendeeCount.value) || parseInt(attendeeCount.value) < 1) { showToast('请填写正确的会议人数', 'error'); return }
 
   const slots = selectedSlots.value.map(s => ({
     start_time: `${s.date} ${s.startTime}:00`,
@@ -42,6 +44,7 @@ function handleSubmit() {
     major: major.value.trim(),
     phone: phone.value.trim(),
     reason: reason.value.trim(),
+    attendee_count: parseInt(attendeeCount.value),
     slots,
   })
 }
@@ -122,6 +125,22 @@ function handleSubmit() {
           class="w-full px-4 py-3 rounded-lg border border-gray-200 text-base focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition"
           style="font-size: 16px;"
           placeholder="请输入11位手机号码…"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="reserve-attendees">会议人数</label>
+        <input
+          id="reserve-attendees"
+          v-model="attendeeCount"
+          type="text"
+          name="attendees"
+          inputmode="numeric"
+          maxlength="4"
+          pattern="[0-9]+"
+          class="w-full px-4 py-3 rounded-lg border border-gray-200 text-base focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition"
+          style="font-size: 16px;"
+          placeholder="请输入参会人数…"
         />
       </div>
 

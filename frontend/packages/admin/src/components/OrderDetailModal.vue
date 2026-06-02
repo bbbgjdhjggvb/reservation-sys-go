@@ -86,6 +86,7 @@ function close() {
               <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                 <div><span class="text-gray-400">申请人</span> <span class="text-gray-700 ml-1">{{ detail.order.applicant_name }}</span></div>
                 <div><span class="text-gray-400">手机</span> <span class="text-gray-700 ml-1">{{ detail.order.phone }}</span></div>
+                <div><span class="text-gray-400">会议人数</span> <span class="text-gray-700 ml-1">{{ detail.order.attendee_count }} 人</span></div>
                 <div><span class="text-gray-400">校友会</span> <span class="text-gray-700 ml-1">{{ detail.order.alumni_association }}</span></div>
                 <div><span class="text-gray-400">专业</span> <span class="text-gray-700 ml-1">{{ detail.order.major }} ({{ detail.order.year }}级)</span></div>
               </div>

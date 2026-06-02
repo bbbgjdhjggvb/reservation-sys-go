@@ -62,6 +62,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 			Major:             "计算机科学",
 			Reason:            "举办活动",
 			Phone:             "13800138000",
+			AttendeeCount:     10,
 			Slots: []TimeSlotReq{
 				{StartTime: "2026-03-25 14:00:00", EndTime: "2026-03-25 16:00:00"},
 			},
@@ -97,6 +98,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 			Major:             "计算机科学",
 			Reason:            "多时段会议",
 			Phone:             "13800138000",
+			AttendeeCount:     5,
 			Slots: []TimeSlotReq{
 				{StartTime: "2026-03-25 08:00:00", EndTime: "2026-03-25 10:00:00"},
 				{StartTime: "2026-03-25 13:00:00", EndTime: "2026-03-25 15:00:00"},
@@ -141,6 +143,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 			ApplicantName: "张三",
 			Reason:        "测试",
 			Phone:         "13800138000",
+			AttendeeCount: 10,
 			Slots: []TimeSlotReq{
 				{StartTime: "invalid-time", EndTime: "2026-03-25 16:00:00"},
 			},
@@ -171,6 +174,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 			Major:             "CS",
 			Reason:            "测试",
 			Phone:             "13800138000",
+			AttendeeCount:     10,
 			Slots:             slots,
 		}
 		jsonBody, _ := json.Marshal(body)
@@ -194,7 +198,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 
 		body := SubmitReq{
 			ApplicantName: "张三", AlumniAssociation: "某校友会", Year: 2020,
-			Major: "CS", Reason: "测试", Phone: "13800138000",
+			Major: "CS", Reason: "测试", Phone: "13800138000", AttendeeCount: 10,
 			Slots: []TimeSlotReq{
 				{StartTime: "2026-03-25 14:00:00", EndTime: "2026-03-25 16:00:00"},
 			},
@@ -463,7 +467,7 @@ func TestReservationHandler_ParamValidation(t *testing.T) {
 	t.Run("时间段结束时间不晚于开始时间", func(t *testing.T) {
 		body := SubmitReq{
 			ApplicantName: "张三", AlumniAssociation: "某校友会", Year: 2020,
-			Major: "CS", Reason: "测试", Phone: "13800138000",
+			Major: "CS", Reason: "测试", Phone: "13800138000", AttendeeCount: 10,
 			Slots: []TimeSlotReq{
 				{StartTime: "2026-06-01 16:00:00", EndTime: "2026-06-01 14:00:00"},
 			},
@@ -509,6 +513,7 @@ func TestReservationHandler_Submit_GetOrderByIDFallback(t *testing.T) {
 			Major:             "CS",
 			Reason:            "测试",
 			Phone:             "13800138000",
+			AttendeeCount:     10,
 			Slots:             []TimeSlotReq{{StartTime: "2026-03-25 14:00:00", EndTime: "2026-03-25 16:00:00"}},
 		}
 		jsonBody, _ := json.Marshal(body)
@@ -618,7 +623,7 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 	t.Run("提交时时间段已被占用(原子检测)", func(t *testing.T) {
 		body := SubmitReq{
 			ApplicantName: "张三", AlumniAssociation: "某校友会", Year: 2020,
-			Major: "CS", Reason: "测试占用检测", Phone: "13800138000",
+			Major: "CS", Reason: "测试占用检测", Phone: "13800138000", AttendeeCount: 10,
 			Slots: []TimeSlotReq{
 				{StartTime: "2026-07-01 09:00:00", EndTime: "2026-07-01 11:00:00"},
 			},
