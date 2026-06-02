@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS `reservation_orders` (
     `major` VARCHAR(30) NOT NULL COMMENT '专业',
     `reason` VARCHAR(500) NOT NULL COMMENT '会议内容/预约理由',
     `phone` VARCHAR(20) NOT NULL COMMENT '联系电话',
+    `attendee_count` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '会议人数',
     `total_slots` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '预约时段数量(1~4)',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1-等待一级审核, 2-等待二级审核, 3-一级审核拒绝, 4-二级审核拒绝, 5-审核通过, 6-已取消, 7-已完成',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

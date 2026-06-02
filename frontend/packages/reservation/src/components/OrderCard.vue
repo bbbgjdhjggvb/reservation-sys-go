@@ -66,6 +66,7 @@ function canCancel(status: number): boolean {
       <p>校友会：{{ order.alumni_association }}</p>
       <p>专业：{{ order.major }}</p>
       <p>手机：{{ order.phone }}</p>
+      <p>人数：{{ order.attendee_count }} 人</p>
       <p>提交：{{ order.created_at }}</p>
     </div>
 

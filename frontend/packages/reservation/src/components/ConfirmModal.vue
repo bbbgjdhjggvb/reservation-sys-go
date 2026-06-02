@@ -52,6 +52,8 @@ const submitting = ref(false)
                 <p class="text-gray-800">{{ pendingData.major }}</p>
                 <p class="text-gray-500">手机：</p>
                 <p class="text-gray-800">{{ pendingData.phone }}</p>
+                <p class="text-gray-500">会议人数：</p>
+                <p class="text-gray-800">{{ pendingData.attendee_count }} 人</p>
               </div>
               <div v-if="pendingData.reason">
                 <p class="text-gray-500">事由：</p>

@@ -46,6 +46,7 @@ export interface OrderResp {
   major: string
   reason: string
   phone: string
+  attendee_count: number
   total_slots: number
   status: number
   status_text: string
@@ -60,6 +61,7 @@ export interface SubmitReq {
   major: string
   reason: string
   phone: string
+  attendee_count: number
   slots: TimeSlotReq[]
 }
 

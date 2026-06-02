@@ -28,7 +28,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 	defer cleanup()
 
 	token := genUserToken(t, "e2e_submit")
-	bodySuccess := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"E2E测试","phone":"13800138000","slots":[{"start_time":"2026-06-01 08:00:00","end_time":"2026-06-01 10:00:00"}]}`
+	bodySuccess := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"E2E测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-01 08:00:00","end_time":"2026-06-01 10:00:00"}]}`
 
 	t.Run("success", func(t *testing.T) {
 		// 1. 返回200
@@ -53,7 +53,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 
 	t.Run("over_4_slots_400", func(t *testing.T) {
 		// 1. 返回400
-		b := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","slots":[
+		b := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","attendee_count":10,"slots":[
 			{"start_time":"2026-06-01 08:00:00","end_time":"2026-06-01 10:00:00"},
 			{"start_time":"2026-06-01 10:00:00","end_time":"2026-06-01 12:00:00"},
 			{"start_time":"2026-06-01 13:00:00","end_time":"2026-06-01 15:00:00"},
@@ -68,7 +68,7 @@ func TestReservationAPI_Submit(t *testing.T) {
 		// 1. 第一个请求返回200
 		// 2. 第二个请求返回400，msg 包含"已被预约"
 		// 使用独立用户和时段避免与 success 子测试冲突
-		bodyConflict := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"E2E测试","phone":"13800138000","slots":[{"start_time":"2026-06-02 08:00:00","end_time":"2026-06-02 10:00:00"}]}`
+		bodyConflict := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"E2E测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-02 08:00:00","end_time":"2026-06-02 10:00:00"}]}`
 		tokenConflict := genUserToken(t, "e2e_conflict")
 		resp1 := doRequestJSON(t, "POST", "/api/reservation/reservation/submit", tokenConflict, bodyConflict, nil)
 		httpStatus(t, resp1, 200)
@@ -111,7 +111,7 @@ func TestReservationAPI_GetMyReservations(t *testing.T) {
 	t.Run("with_data", func(t *testing.T) {
 		// 1. 先提交预约，返回200
 		// 2. 查询列表，返回200，data 包含"张三"
-		body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","slots":[{"start_time":"2026-06-01 14:00:00","end_time":"2026-06-01 16:00:00"}]}`
+		body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-01 14:00:00","end_time":"2026-06-01 16:00:00"}]}`
 		resp1 := doRequestJSON(t, "POST", "/api/reservation/reservation/submit", token, body, nil)
 		assertOK(t, resp1)
 		resp1.Body.Close()
@@ -191,7 +191,7 @@ func TestReservationAPI_Cancel(t *testing.T) {
 	defer cleanup()
 
 	token := genUserToken(t, "e2e_cancel")
-	body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","slots":[{"start_time":"2026-06-04 08:00:00","end_time":"2026-06-04 10:00:00"}]}`
+	body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-04 08:00:00","end_time":"2026-06-04 10:00:00"}]}`
 
 	// 先提交预约获取订单 ID
 	resp := doRequestJSON(t, "POST", "/api/reservation/reservation/submit", token, body, nil)
@@ -269,7 +269,7 @@ func TestReservationAPI_RateLimit(t *testing.T) {
 	// 每次请求使用不同时段避免业务冲突
 	for i := 1; i <= 3; i++ {
 		hour := 8 + i
-		body := fmt.Sprintf(`{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"限流测试","phone":"13800138000","slots":[{"start_time":"2026-06-03 %02d:00:00","end_time":"2026-06-03 %02d:00:00"}]}`, hour, hour+1)
+		body := fmt.Sprintf(`{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"限流测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-03 %02d:00:00","end_time":"2026-06-03 %02d:00:00"}]}`, hour, hour+1)
 		resp := doRequestJSON(t, "POST", "/api/reservation/reservation/submit", token, body, nil)
 		if resp.StatusCode != 200 {
 			bodyStr := readBody(t, resp)
@@ -278,7 +278,7 @@ func TestReservationAPI_RateLimit(t *testing.T) {
 		resp.Body.Close()
 	}
 
-	body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"限流测试","phone":"13800138000","slots":[{"start_time":"2026-06-03 14:00:00","end_time":"2026-06-03 15:00:00"}]}`
+	body := `{"applicant_name":"张三","alumni_association":"校友会","year":2020,"major":"CS","reason":"限流测试","phone":"13800138000","attendee_count":10,"slots":[{"start_time":"2026-06-03 14:00:00","end_time":"2026-06-03 15:00:00"}]}`
 	resp := doRequestJSON(t, "POST", "/api/reservation/reservation/submit", token, body, nil)
 	httpStatus(t, resp, 429)
 	bodyStr := readBody(t, resp)

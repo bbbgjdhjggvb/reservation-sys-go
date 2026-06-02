@@ -20,6 +20,7 @@ type SubmitReq struct {
 	Major             string        `json:"major" binding:"required" example:"建筑系"`
 	Reason            string        `json:"reason" binding:"required,max=500" example:"智慧城市讲座"`
 	Phone             string        `json:"phone" binding:"required,len=11" example:"13800138000"`
+	AttendeeCount     int           `json:"attendee_count" binding:"required,min=1" example:"10"`
 	Slots             []TimeSlotReq `json:"slots" binding:"required,min=1,max=4,dive"`
 }
 
@@ -45,6 +46,7 @@ type OrderResp struct {
 	Major             string     `json:"major" example:"建筑系"`
 	Reason            string     `json:"reason" example:"智慧城市讲座"`
 	Phone             string     `json:"phone" example:"13800138000"`
+	AttendeeCount     int        `json:"attendee_count" example:"10"`
 	TotalSlots        int        `json:"total_slots" example:"2"`
 	Status            int        `json:"status" example:"0"`
 	StatusText        string     `json:"status_text" example:"待审核"`
@@ -112,6 +114,7 @@ func OrderToResp(o *reservationdb.ReservationOrder, showPassword ...bool) *Order
 		Major:             o.Major,
 		Reason:            o.Reason,
 		Phone:             o.Phone,
+		AttendeeCount:     o.AttendeeCount,
 		TotalSlots:        o.TotalSlots,
 		Status:            o.Status,
 		StatusText:        reservationdb.StatusText(o.Status),
