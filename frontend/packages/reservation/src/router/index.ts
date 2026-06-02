@@ -5,7 +5,7 @@ const routes = [
     path: '/',
     name: 'reserve',
     component: () => import('@/views/ReserveView.vue'),
-    meta: { title: '场地预约系统' },
+    meta: { title: '深圳大学校友之家场地预约' },
   },
   {
     path: '/myorders',
@@ -25,7 +25,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  document.title = (to.meta.title as string) || '场地预约系统'
+  document.title = (to.meta.title as string) || '深圳大学校友之家场地预约'
 })
 
 export default router

@@ -11,12 +11,31 @@
   --color-primary-700: #8B0000;
   --color-primary-800: #660000;
   --color-primary-900: #4A0000;
+
+  --color-szu-red: #901111;
+  --color-szu-red-dark: #750e0e;
+  --color-szu-red-light: #fdf2f2;
+  --color-szu-red-hover: #a81616;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* 隐藏原生横向滚动条 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 已占用斜线背景 */
+.stripe-bg {
+  background-image: repeating-linear-gradient(45deg, #fef2f2 0px, #fef2f2 8px, #fee2e2 8px, #fee2e2 16px);
 }
 
 @media (prefers-reduced-motion: reduce) {
