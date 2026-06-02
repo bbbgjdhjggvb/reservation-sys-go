@@ -6,14 +6,24 @@ import guidImg from '@/assets/guid.jpg'
 const showGuide = ref(false)
 const showRules = ref(false)
 
+function lockBodyScroll() {
+  document.body.style.overflow = 'hidden'
+}
+
+function unlockBodyScroll() {
+  document.body.style.overflow = ''
+}
+
 function openModal(type: 'guide' | 'rules') {
   if (type === 'guide') showGuide.value = true
   else showRules.value = true
+  lockBodyScroll()
 }
 
 function closeAll() {
   showGuide.value = false
   showRules.value = false
+  unlockBodyScroll()
 }
 </script>
 
@@ -66,7 +76,7 @@ function closeAll() {
       class="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]"
       @click.self="closeAll"
     >
-      <div class="bg-white rounded-3xl p-5 max-w-sm w-11/12 text-center relative shadow-2xl">
+      <div class="bg-white rounded-3xl p-5 max-w-sm w-11/12 text-center relative shadow-2xl" @wheel.stop>
         <!-- Close button -->
         <button
           @click="closeAll"
@@ -75,10 +85,10 @@ function closeAll() {
           ✕
         </button>
 
-        <h3 class="text-base font-bold text-gray-900 mb-3">多功能会议厅 · 场地指引</h3>
+        <h3 class="text-base font-bold text-gray-900 mb-3">场地指引</h3>
 
         <!-- Map image (max-height to prevent overscroll on desktop) -->
-        <div class="bg-gray-100 rounded-2xl w-full mb-4 overflow-hidden max-h-[60vh] overflow-y-auto">
+        <div class="bg-gray-100 rounded-2xl w-full mb-4 overflow-hidden max-h-[60vh] overflow-y-auto [overscroll-behavior:contain]">
           <img
             :src="guidImg"
             alt="场地指引地图"
@@ -104,7 +114,7 @@ function closeAll() {
       class="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]"
       @click.self="closeAll"
     >
-      <div class="bg-white rounded-3xl p-6 max-w-sm w-11/12 relative shadow-2xl text-left">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-11/12 relative shadow-2xl text-left" @wheel.stop>
         <!-- Close button -->
         <button
           @click="closeAll"
@@ -113,13 +123,13 @@ function closeAll() {
           ✕
         </button>
 
-        <h3 class="text-base font-bold text-gray-900 mb-4 text-center">多功能会议厅 · 使用须知</h3>
+        <h3 class="text-base font-bold text-gray-900 mb-4 text-center">使用须知</h3>
 
-        <div class="max-h-60 overflow-y-auto pr-2 space-y-3.5 text-xs text-gray-600 leading-relaxed mb-6">
+        <div class="max-h-60 overflow-y-auto pr-2 space-y-3.5 text-xs text-gray-600 leading-relaxed mb-6 [overscroll-behavior:contain]">
           <p class="font-bold text-gray-800">尊敬的校友、师生：</p>
           <p>为保障深圳大学校友之家多功能会议厅合理、高效、安全地使用，请在预约前遵守以下须知：</p>
           <div class="space-y-3">
-            <p><span class="font-bold text-szu-red">1. 预约对象</span><br />场地主要面向深圳大学全体校友、在校师生开放，用于校友联谊、学术交流、班级聚会或社团活动。</p>
+            <p><span class="font-bold text-szu-red">1. 预约对象</span><br />因场地有限，预约申请需以学院分会、地区分会、行业分会名义发起。暂不接受个人名义的预约，校友个人如有场地使用需求，需要联系所属分会，以分会名义提出申请。</p>
             <p><span class="font-bold text-szu-red">2. 安全与秩序</span><br />请爱护场内所有公物与电子设备。活动期间严禁携带易燃易爆等危险品入场。禁止高声喧哗，以免影响周围办公秩序。</p>
             <p><span class="font-bold text-szu-red">3. 卫生与复原</span><br />活动结束后，请使用者自行带走产生的垃圾，并将桌椅设施恢复原样。如有损坏，需照价赔偿。</p>
             <p><span class="font-bold text-szu-red">4. 爽约限制</span><br />如因故无法正常进行，请至少提前 24 小时取消预约。若无故爽约超过 2 次，该账号将被暂停预约权限 30 天。</p>
