@@ -17,6 +17,7 @@ type OrderResp struct {
 	Major             string     `json:"major"`
 	Reason            string     `json:"reason"`
 	Phone             string     `json:"phone"`
+	AttendeeCount     int        `json:"attendee_count"`
 	TotalSlots        int        `json:"total_slots"`
 	Status            int        `json:"status"`
 	StatusText        string     `json:"status_text"`
@@ -61,6 +62,7 @@ func OrderToResp(o *reservationdb.ReservationOrder, showPassword bool) *OrderRes
 		Major:             o.Major,
 		Reason:            o.Reason,
 		Phone:             o.Phone,
+		AttendeeCount:     o.AttendeeCount,
 		TotalSlots:        o.TotalSlots,
 		Status:            o.Status,
 		StatusText:        reservationdb.StatusText(o.Status),
