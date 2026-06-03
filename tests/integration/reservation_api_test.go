@@ -169,6 +169,13 @@ func TestReservationAPI_GetOccupiedSlots(t *testing.T) {
 		httpStatus(t, resp, 200)
 		resp.Body.Close()
 	})
+
+		t.Run("no_token_401", func(t *testing.T) {
+		// 1. 返回401（接口已添加 @Security BearerAuth）
+		resp := doRequestJSON(t, "GET", "/api/reservation/reservation/occupied?date=2026-06-01", "", "", nil)
+		httpStatus(t, resp, 401)
+		resp.Body.Close()
+		})
 }
 
 // ========== 取消预约 ==========

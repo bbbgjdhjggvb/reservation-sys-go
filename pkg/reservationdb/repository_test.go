@@ -655,3 +655,142 @@ func TestCreateOrderWithLock(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }
+
+// ========== FindSlotsWithOpenIDByTimeRange ==========
+//
+// 测试 repository.go 文件中
+// func FindSlotsWithOpenIDByTimeRange(start, end time.Time) ([]SlotWithOpenID, error)
+//
+// 函数功能：查询指定时间范围内的已占用时段，并通过 LEFT JOIN reservation_orders
+// 附带每个时段所属订单的 open_id，供上层服务标记 is_mine。
+//
+// SQL:
+//
+//	SELECT reservation_slots.*, reservation_orders.open_id
+//	FROM reservation_slots
+//	LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id
+//	WHERE reservation_slots.status IN (1,2,5)
+//	  AND reservation_slots.start_time < ? AND reservation_slots.end_time > ?;
+//
+// 测试场景：
+// 1. LEFT JOIN 成功关联订单返回 open_id
+//    - 目的：验证 JOIN 查询正确返回了关联订单的 open_id 字段
+//    - 预期：返回的 SlotWithOpenID.OpenID 等于关联订单的 open_id
+//    - SQL：需匹配 LEFT JOIN 语法和 Select 字段
+// 2. 时间范围内无已占用时段返回空切片
+//    - 目的：验证查询结果为空时返回空切片而不是 nil
+//    - 预期：len(result) == 0, err == nil
+// 3. LEFT JOIN 保护 — 订单被异常删除时 open_id 为空
+//    - 目的：验证防御性设计，LEFT JOIN 不会因订单不存在而丢失时段数据
+//    - 预期：返回 1 条记录，OpenID 为空字符串
+// 4. 多订单混合查询
+//    - 目的：验证返回结果包含多个不同 open_id 的时段
+//    - 预期：返回 2 条记录，分别对应不同的 OpenID
+func TestFindSlotsWithOpenIDByTimeRange(t *testing.T) {
+	gormDB, mock := newMockDB(t)
+	repo := NewRepository(gormDB)
+
+	start := time.Date(2026, 3, 25, 0, 0, 0, 0, time.Local)
+	end := time.Date(2026, 3, 26, 0, 0, 0, 0, time.Local)
+
+	t.Run("LEFT_JOIN成功关联订单返回open_id", func(t *testing.T) {
+		// 返回的字段需包含 reservation_slots.* 的所有字段 + reservation_orders.open_id
+		rows := sqlmock.NewRows([]string{
+			"id", "order_id", "start_time", "end_time", "status", "password", "created_at", "updated_at", "open_id",
+		}).AddRow(
+			1, 100,
+			time.Date(2026, 3, 25, 8, 0, 0, 0, time.Local),
+			time.Date(2026, 3, 25, 10, 0, 0, 0, time.Local),
+			StatusPendingLevel1, "", time.Now(), time.Now(),
+			"user_openid_001", // ← 关键字段：关联订单的 open_id
+		)
+
+		// SELECT reservation_slots.*, reservation_orders.open_id
+		// FROM reservation_slots
+		// LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id
+		// WHERE reservation_slots.status IN (?,?,?)
+		//   AND (reservation_slots.start_time < ? AND reservation_slots.end_time > ?)
+		mock.ExpectQuery("SELECT reservation_slots\\.\\*, reservation_orders\\.open_id FROM `reservation_slots` LEFT JOIN reservation_orders ON reservation_orders\\.id = reservation_slots\\.order_id WHERE reservation_slots\\.status IN \\(\\?,\\?,\\?\\) AND \\(reservation_slots\\.start_time < \\? AND reservation_slots\\.end_time > \\?\\)").
+			WithArgs(StatusPendingLevel1, StatusPendingLevel2, StatusApproved, end, start).
+			WillReturnRows(rows)
+
+		slots, err := repo.FindSlotsWithOpenIDByTimeRange(start, end)
+		require.NoError(t, err)
+		assert.Len(t, slots, 1)
+		// 验证嵌入的 ReservationSlot 字段
+		assert.Equal(t, uint(1), slots[0].ID)
+		assert.Equal(t, StatusPendingLevel1, slots[0].Status)
+		// ★ 验证 OpenID 正确返回
+		assert.Equal(t, "user_openid_001", slots[0].OpenID)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("时间范围内无已占用时段返回空切片", func(t *testing.T) {
+		rows := sqlmock.NewRows([]string{
+			"id", "order_id", "start_time", "end_time", "status", "password", "created_at", "updated_at", "open_id",
+		})
+		// 返回空结果集，无 AddRow
+
+		mock.ExpectQuery("SELECT reservation_slots\\.\\*, reservation_orders\\.open_id").
+			WithArgs(StatusPendingLevel1, StatusPendingLevel2, StatusApproved, end, start).
+			WillReturnRows(rows)
+
+		slots, err := repo.FindSlotsWithOpenIDByTimeRange(start, end)
+		require.NoError(t, err)
+		assert.Len(t, slots, 0)
+		assert.NotNil(t, slots) // 应该是空切片，不是 nil
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("LEFT_JOIN保护_订单不存在时open_id为空", func(t *testing.T) {
+		// 模拟异常场景：reservation_slots.order_id 指向的订单在 reservation_orders 中不存在
+		// LEFT JOIN 的保护效果：open_id 为 NULL（Go 中为空字符串）
+		rows := sqlmock.NewRows([]string{
+			"id", "order_id", "start_time", "end_time", "status", "password", "created_at", "updated_at", "open_id",
+		}).AddRow(
+			2, 999, // order_id=999 不存在于 reservation_orders
+			time.Date(2026, 3, 25, 13, 0, 0, 0, time.Local),
+			time.Date(2026, 3, 25, 15, 0, 0, 0, time.Local),
+			StatusApproved, "1234", time.Now(), time.Now(),
+			nil, // ← open_id 为 NULL（Go sqlmock 中 nil 映射为空字符串）
+		)
+
+		mock.ExpectQuery("SELECT reservation_slots\\.\\*, reservation_orders\\.open_id").
+			WithArgs(StatusPendingLevel1, StatusPendingLevel2, StatusApproved, end, start).
+			WillReturnRows(rows)
+
+		slots, err := repo.FindSlotsWithOpenIDByTimeRange(start, end)
+		require.NoError(t, err)
+		assert.Len(t, slots, 1)
+		// LEFT JOIN 保护：订单不存在时 OpenID 应为空，不会丢失时段数据
+		assert.Empty(t, slots[0].OpenID)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("多订单混合查询_返回不同openid", func(t *testing.T) {
+		rows := sqlmock.NewRows([]string{
+			"id", "order_id", "start_time", "end_time", "status", "password", "created_at", "updated_at", "open_id",
+		}).
+			AddRow(1, 10,
+				time.Date(2026, 3, 25, 8, 0, 0, 0, time.Local),
+				time.Date(2026, 3, 25, 10, 0, 0, 0, time.Local),
+				StatusPendingLevel1, "", time.Now(), time.Now(),
+				"user_a").
+			AddRow(2, 20,
+				time.Date(2026, 3, 25, 14, 0, 0, 0, time.Local),
+				time.Date(2026, 3, 25, 16, 0, 0, 0, time.Local),
+				StatusApproved, "", time.Now(), time.Now(),
+				"user_b")
+
+		mock.ExpectQuery("SELECT reservation_slots\\.\\*, reservation_orders\\.open_id").
+			WithArgs(StatusPendingLevel1, StatusPendingLevel2, StatusApproved, end, start).
+			WillReturnRows(rows)
+
+		slots, err := repo.FindSlotsWithOpenIDByTimeRange(start, end)
+		require.NoError(t, err)
+		assert.Len(t, slots, 2)
+		assert.Equal(t, "user_a", slots[0].OpenID)
+		assert.Equal(t, "user_b", slots[1].OpenID)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
