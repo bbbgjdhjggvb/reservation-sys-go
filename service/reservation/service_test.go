@@ -504,7 +504,7 @@ func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 	svc := NewReservationService(mockRepo)
 
 	t.Run("invalid_date_format", func(t *testing.T) {
-		result, err := svc.GetOccupiedSlots("not-a-date")
+		result, err := svc.GetOccupiedSlots("not-a-date", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "日期格式错误")
 		assert.Nil(t, result)
@@ -512,10 +512,10 @@ func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 
 	t.Run("db_error", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db connection error"))
 
-		result, err := svc.GetOccupiedSlots("2026-03-25")
+		result, err := svc.GetOccupiedSlots("2026-03-25", "")
 		assert.Error(t, err)
 		assert.Nil(t, result)
 	})
@@ -565,16 +565,17 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 	svc := NewReservationService(mockRepo)
 
 	testDate := "2026-03-25"
-	mockSlots := []reservationdb.ReservationSlot{
-		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1},
-		{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved},
+	mockSlots := []reservationdb.SlotWithOpenID{
+		{ReservationSlot: reservationdb.ReservationSlot{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1}, OpenID: "user_a"},
+		{ReservationSlot: reservationdb.ReservationSlot{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved}, OpenID: "user_b"},
 	}
 
 	mockRepo.EXPECT().
-		FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+		FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 		Return(mockSlots, nil)
 
-	result, err := svc.GetOccupiedSlots(testDate)
+	// 以 user_a 身份查询，验证 is_mine 标记
+	result, err := svc.GetOccupiedSlots(testDate, "user_a")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 
@@ -591,10 +592,12 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 
 	t.Run("pending_status", func(t *testing.T) {
 		assert.Equal(t, "pending", result[0].Status, "待审核时段应返回 'pending'")
+		assert.True(t, result[0].IsMine, "user_a 的 pending 时段 is_mine 应为 true")
 	})
 
 	t.Run("approved_status", func(t *testing.T) {
 		assert.Equal(t, "approved", result[1].Status, "已通过时段应返回 'approved'")
+		assert.False(t, result[1].IsMine, "user_b 的 approved 时段 is_mine 应为 false")
 	})
 
 	t.Run("exact_time_values", func(t *testing.T) {

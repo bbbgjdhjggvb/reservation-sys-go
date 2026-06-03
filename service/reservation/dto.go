@@ -54,11 +54,20 @@ type OrderResp struct {
 	Slots             []SlotResp `json:"slots"`
 }
 
-// TimeSlotResp 已占用时间段响应
+// TimeSlotResp 已占用时间段响应。
+// 用于日历界面展示某日期的已占用时段列表，
+// 前端根据 is_mine 区分"我的预约"和"他人的预约"。
+//
+// 字段:
+//   - StartTime: 时段开始时间，格式 "2006-01-02 15:04"
+//   - EndTime: 时段结束时间，格式 "2006-01-02 15:04"
+//   - Status: 时段状态字符串，"pending"（待审核）或 "approved"（已通过）
+//   - IsMine: true 表示该时段属于当前登录用户，前端据此显示差异化样式
 type TimeSlotResp struct {
 	StartTime string `json:"start_time" example:"2026-01-01 09:00"`
 	EndTime   string `json:"end_time" example:"2026-01-01 11:00"`
 	Status    string `json:"status" example:"pending"`
+	IsMine    bool   `json:"is_mine" example:"false"`
 }
 
 // Response 统一响应结构

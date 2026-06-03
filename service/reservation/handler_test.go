@@ -234,13 +234,16 @@ func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 
 	t.Run("获取成功", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]reservationdb.ReservationSlot{
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
 				{
-					ID:        1,
-					StartTime: time.Date(2026, 3, 25, 14, 0, 0, 0, time.Local),
-					EndTime:   time.Date(2026, 3, 25, 16, 0, 0, 0, time.Local),
-					Status:    reservationdb.StatusApproved,
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID:        1,
+						StartTime: time.Date(2026, 3, 25, 14, 0, 0, 0, time.Local),
+						EndTime:   time.Date(2026, 3, 25, 16, 0, 0, 0, time.Local),
+						Status:    reservationdb.StatusApproved,
+					},
+					OpenID: "other_user",
 				},
 			}, nil)
 
@@ -590,7 +593,7 @@ func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 
 	t.Run("数据库查询失败返回400", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db error"))
 
 		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
@@ -650,8 +653,8 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 		r2.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]reservationdb.ReservationSlot{}, nil)
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{}, nil)
 
 		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied", nil)
 		w := httptest.NewRecorder()

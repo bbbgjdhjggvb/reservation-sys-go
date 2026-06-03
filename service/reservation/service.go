@@ -125,39 +125,63 @@ func (s *ReservationService) GetMyReservations(openid string) ([]*reservationdb.
 	return s.repo.FindOrdersByOpenID(openid)
 }
 
-// GetOccupiedSlots 获取指定日期的已占用时间段（供前端日历展示）。
+// GetOccupiedSlots 获取指定日期的已占用时间段，并标记是否属于当前用户。
 //
 // 参数:
 //   - date: 日期字符串，格式 "2006-01-02"，为空时默认当天
+//   - openid: 当前用户的 openid，为空字符串时所有时段的 is_mine 为 false
+//     （兼容未登录用户查看日历的场景）
 //
 // 返回值:
-//   - []TimeSlotResp: 已占用时段列表（含起止时间和状态）
+//   - []TimeSlotResp: 已占用时段列表（含起止时间、状态、是否属于当前用户）
 //   - error: 日期格式错误或查询失败时返回错误
-func (s *ReservationService) GetOccupiedSlots(date string) ([]TimeSlotResp, error) {
+//
+// 流程:
+//  1. 解析日期字符串为 time.Time，失败返回 "日期格式错误"
+//  2. 计算当天起止时间（startOfDay ~ endOfDay = +24h）
+//  3. 调用 repo.FindSlotsWithOpenIDByTimeRange 查询时段（LEFT JOIN 含 open_id）
+//  4. 遍历每个 slot：
+//     a. 状态码映射：StatusApproved(5) → "approved"，其他 → "pending"
+//     b. 比对 slot.OpenID 与当前用户 openid 设置 is_mine
+//     c. 格式化为 TimeSlotResp 追加到结果
+//  5. 返回结果
+func (s *ReservationService) GetOccupiedSlots(date string, openid string) ([]TimeSlotResp, error) {
+	// 1. 解析日期
 	day, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	if err != nil {
 		return nil, fmt.Errorf("日期格式错误")
 	}
 
+	// 2. 计算查询时间范围
 	startOfDay := day
 	endOfDay := day.Add(24 * time.Hour)
 
-	slots, err := s.repo.FindSlotsByTimeRange(startOfDay, endOfDay)
+	// 3. 查询时段（LEFT JOIN 附带 open_id）
+	slots, err := s.repo.FindSlotsWithOpenIDByTimeRange(startOfDay, endOfDay)
 	if err != nil {
 		log.Printf("[error][service/GetOccupiedSlots] 查询占用时段失败: %v", err)
 		return nil, err
 	}
 
+	// 4. 映射为响应 DTO
 	result := make([]TimeSlotResp, 0, len(slots))
 	for _, slot := range slots {
+		// 4a. 状态码 → 状态字符串
 		status := "pending"
 		if slot.Status == reservationdb.StatusApproved {
 			status = "approved"
 		}
+
+		// 4b. 判断是否属于当前用户
+		// openid 为空（未登录场景）时 is_mine 必为 false
+		isMine := openid != "" && slot.OpenID == openid
+
+		// 4c. 格式化并追加
 		result = append(result, TimeSlotResp{
 			StartTime: slot.StartTime.Format("2006-01-02 15:04"),
 			EndTime:   slot.EndTime.Format("2006-01-02 15:04"),
 			Status:    status,
+			IsMine:    isMine,
 		})
 	}
 
