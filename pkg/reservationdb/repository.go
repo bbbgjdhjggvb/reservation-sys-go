@@ -87,6 +87,20 @@ type Repository interface {
 	//   - []ReservationSlot: 有交集的时段列表
 	FindSlotsByTimeRange(start, end time.Time) ([]ReservationSlot, error)
 
+	// FindSlotsWithOpenIDByTimeRange 查询指定时间范围内有交集的已占用时段，
+	// 并通过 LEFT JOIN 附带每个时段所属订单的 open_id，供上层标记 is_mine。
+	// SQL: SELECT reservation_slots.*, reservation_orders.open_id
+	//      FROM reservation_slots
+	//      LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id
+	//      WHERE reservation_slots.status IN (1,2,5)
+	//        AND reservation_slots.start_time < ? AND reservation_slots.end_time > ?;
+	// 参数:
+	//   - start: 范围起始时间
+	//   - end: 范围结束时间
+	// 返回值:
+	//   - []SlotWithOpenID: 带 open_id 的时段列表，无记录时返回空切片
+	FindSlotsWithOpenIDByTimeRange(start, end time.Time) ([]SlotWithOpenID, error)
+
 	// UpdateSlotStatus 更新单个时段的状态。
 	// SQL: UPDATE reservation_slots SET status = ? WHERE id = ?;
 	// 参数:
@@ -410,6 +424,58 @@ func (r *repository) FindSlotsByTimeRange(start, end time.Time) ([]ReservationSl
 		Where("start_time < ? AND end_time > ?", end, start).
 		Find(&slots).Error
 	return slots, err
+}
+
+// SlotWithOpenID 带订单归属信息的时段查询结果。
+// 嵌入 ReservationSlot 的全部字段，并附加关联订单的 open_id，
+// 供上层判断该时段是否属于当前用户。
+//
+// 字段:
+//   - ReservationSlot: 时段基础数据（ID / OrderID / StartTime / EndTime / Status）
+//   - OpenID: 时段所属订单的 open_id，来自 reservation_orders 表
+type SlotWithOpenID struct {
+	ReservationSlot
+	OpenID string
+}
+
+// FindSlotsWithOpenIDByTimeRange 查询指定时间范围内有交集的已占用时段，
+// 并通过 LEFT JOIN 附带每个时段所属订单的 open_id。
+//
+// SQL:
+//
+//	SELECT reservation_slots.*, reservation_orders.open_id
+//	FROM reservation_slots
+//	LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id
+//	WHERE reservation_slots.status IN (1, 2, 5)
+//	  AND reservation_slots.start_time < ? AND reservation_slots.end_time > ?;
+//
+// 使用 LEFT JOIN（非 INNER JOIN）是防御性设计：
+// 即便 order_id 对应的订单被异常删除（外键约束下不应发生），
+// 查询也不会丢失时段数据，只是 open_id 为 NULL。
+//
+// 参数:
+//   - start: 范围起始时间
+//   - end: 范围结束时间
+//
+// 返回值:
+//   - []SlotWithOpenID: 带 open_id 的时段列表，无记录时返回空切片
+//   - error: 查询失败时返回数据库错误
+func (r *repository) FindSlotsWithOpenIDByTimeRange(start, end time.Time) ([]SlotWithOpenID, error) {
+	var results []SlotWithOpenID
+
+	// SELECT reservation_slots.*, reservation_orders.open_id
+	// FROM reservation_slots
+	// LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id
+	// WHERE reservation_slots.status IN (1, 2, 5)
+	//   AND reservation_slots.start_time < end AND reservation_slots.end_time > start;
+	err := r.db.Table("reservation_slots").
+		Select("reservation_slots.*, reservation_orders.open_id").
+		Joins("LEFT JOIN reservation_orders ON reservation_orders.id = reservation_slots.order_id").
+		Where("reservation_slots.status IN ?", []int{StatusPendingLevel1, StatusPendingLevel2, StatusApproved}).
+		Where("reservation_slots.start_time < ? AND reservation_slots.end_time > ?", end, start).
+		Find(&results).Error
+
+	return results, err
 }
 
 // UpdateSlotStatus 更新单个时段的状态。

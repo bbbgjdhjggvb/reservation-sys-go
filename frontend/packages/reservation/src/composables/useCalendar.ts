@@ -67,15 +67,25 @@ export function useCalendar() {
     await Promise.all(promises.map(p => p.catch(() => {})))
   }
 
-  function getSlotStatus(dateStr: string, startTime: string, endTime: string): string | null {
+  /**
+   * 查询指定时段的占用状态及归属信息。
+   * 遍历 occupiedSlots 中该日期的所有已占用时段，使用时间重叠算法匹配。
+   *
+   * @param dateStr - 日期字符串 "YYYY-MM-DD"
+   * @param startTime - 时段开始时间 "HH:MM"
+   * @param endTime - 时段结束时间 "HH:MM"
+   * @returns 匹配到的占用信息，未匹配时返回 null
+   */
+  function getSlotInfo(dateStr: string, startTime: string, endTime: string): { status: string; isMine: boolean } | null {
     const slots = occupiedSlots[dateStr]
     if (!slots) return null
 
     for (const s of slots) {
       const sStart = extractTime(s.start_time)
       const sEnd = extractTime(s.end_time)
+      // 时间范围有交集即视为占用
       if (startTime < sEnd && endTime > sStart) {
-        return s.status
+        return { status: s.status, isMine: s.is_mine }
       }
     }
     return null
@@ -102,11 +112,30 @@ export function useCalendar() {
     return true
   }
 
+  /**
+   * 计算日历单元格的显示状态。
+   * 优先级：past > 自己的占用 > 他人的占用 > selected > available
+   *
+   * 状态映射：
+   *   自己的 pending  → pending   （待审核）
+   *   自己的 approved → approved-mine（我的预约）
+   *   他人的 pending  → approved  （已占用，合并到他人的已占用）
+   *   他人的 approved → approved  （已占用）
+   */
   function getCellState(dateStr: string, startTime: string, endTime: string, date: Date): string {
     if (isPastDay(date) || isBeyondBookable(date)) return 'past'
     if (isSlotInPast(dateStr, endTime) && addDays(new Date(), 0).toDateString() === date.toDateString()) return 'past'
-    const status = getSlotStatus(dateStr, startTime, endTime)
-    if (status) return status
+
+    const info = getSlotInfo(dateStr, startTime, endTime)
+    if (info) {
+      if (info.isMine) {
+        // 自己的 pending → "待审核"，自己的 approved → "我的预约"
+        return info.status === 'pending' ? 'pending' : 'approved-mine'
+      }
+      // 他人的：pending 和 approved 统一显示为 "已占用"
+      return 'approved'
+    }
+
     if (isSlotSelected(dateStr, startTime, endTime)) return 'selected'
     return 'available'
   }

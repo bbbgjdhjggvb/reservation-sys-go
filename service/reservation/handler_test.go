@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -169,7 +170,7 @@ func TestReservationHandler_Submit(t *testing.T) {
 		}
 		body := SubmitReq{
 			ApplicantName:     "张三",
-			AlumniAssociation: "计算机与软件学院校友会",
+		AlumniAssociation: "计算机与软件学院校友会",
 			Year:              2020,
 			Major:             "CS",
 			Reason:            "测试",
@@ -234,13 +235,16 @@ func TestReservationHandler_GetOccupiedSlots(t *testing.T) {
 
 	t.Run("获取成功", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]reservationdb.ReservationSlot{
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
 				{
-					ID:        1,
-					StartTime: time.Date(2026, 3, 25, 14, 0, 0, 0, time.Local),
-					EndTime:   time.Date(2026, 3, 25, 16, 0, 0, 0, time.Local),
-					Status:    reservationdb.StatusApproved,
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID:        1,
+						StartTime: time.Date(2026, 3, 25, 14, 0, 0, 0, time.Local),
+						EndTime:   time.Date(2026, 3, 25, 16, 0, 0, 0, time.Local),
+						Status:    reservationdb.StatusApproved,
+					},
+					OpenID: "other_user",
 				},
 			}, nil)
 
@@ -590,7 +594,7 @@ func TestReservationHandler_GetOccupiedSlots_Error(t *testing.T) {
 
 	t.Run("数据库查询失败返回400", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db error"))
 
 		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
@@ -650,8 +654,8 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 		r2.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
 
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
-			Return([]reservationdb.ReservationSlot{}, nil)
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{}, nil)
 
 		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied", nil)
 		w := httptest.NewRecorder()
@@ -680,5 +684,140 @@ func TestReservationHandler_BusinessErrors(t *testing.T) {
 		// 空列表应为 [] 或 null
 		dataRaw, _ := json.Marshal(resp.Data)
 		assert.Contains(t, string(dataRaw), "[")
+	})
+}
+
+// ========== GetOccupiedSlots is_mine 归属标记 ==========
+//
+// 测试 handler.go 文件中
+// func (h *ReservationHandler) GetOccupiedSlots(c *gin.Context)
+//
+// 函数功能：接收 HTTP 请求查询已占用时段，从 gin context 提取 openid 传递给服务层，
+// 使服务层能够标记 is_mine 字段。
+//
+// 测试场景：
+// 1. 认证用户查询 — 自己的时段 is_mine=true
+//    - 目的：验证从 context 提取 openid 后正确传递到服务层，is_mine 生效
+//    - 预期：HTTP 200，响应 data[0].is_mine 为 true
+// 2. 认证用户查询 — 他人的时段 is_mine=false
+//    - 目的：验证不同用户之间的 is_mine 隔离
+//    - 预期：HTTP 200，响应 data[0].is_mine 为 false
+// 3. 未认证用户查询 — 所有 is_mine=false
+//    - 目的：验证 context 中无 openid 时，所有时段 is_mine 为 false
+//    - 预期：HTTP 200，所有 is_mine 为 false
+func TestReservationHandler_GetOccupiedSlots_IsMine(t *testing.T) {
+	ctrl, mockRepo, hdl, _ := setupTestHandler(t)
+	defer ctrl.Finish()
+
+	t.Run("认证用户查询_自己的时段is_mine为true", func(t *testing.T) {
+		// 准备：模拟当前用户 "user_me" 在数据库中有 1 个 pending 时段
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 1, StartTime: time.Date(2026, 3, 25, 8, 0, 0, 0, time.Local),
+						EndTime: time.Date(2026, 3, 25, 10, 0, 0, 0, time.Local),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: "user_me", // ← 与上下文中的 openid 一致
+				},
+			}, nil)
+
+		// 创建带 openid 上下文的路由（模拟 AuthMiddleware 已注入 openid）
+		r := gin.New()
+		r.GET("/api/reservation/reservation/occupied", func(c *gin.Context) {
+			c.Set("openid", "user_me") // ← 注入当前用户 openid
+			hdl.GetOccupiedSlots(c)
+		})
+
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		// 验证 HTTP 200 且 is_mine 为 true
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp Response
+		err := json.Unmarshal(w.Body.Bytes(), &resp)
+		require.NoError(t, err)
+		assert.Equal(t, 200, resp.Code)
+
+		slots, ok := resp.Data.([]interface{})
+		require.True(t, ok)
+		assert.Len(t, slots, 1)
+		slot := slots[0].(map[string]interface{})
+		assert.Equal(t, "pending", slot["status"])
+		assert.Equal(t, true, slot["is_mine"],
+			"自己的时段 is_mine 应为 true")
+	})
+
+	t.Run("认证用户查询_他人的时段is_mine为false", func(t *testing.T) {
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 2, StartTime: time.Date(2026, 3, 25, 10, 0, 0, 0, time.Local),
+						EndTime: time.Date(2026, 3, 25, 12, 0, 0, 0, time.Local),
+						Status:  reservationdb.StatusApproved,
+					},
+					OpenID: "other_user", // ← 与上下文中的 openid 不同
+				},
+			}, nil)
+
+		r := gin.New()
+		r.GET("/api/reservation/reservation/occupied", func(c *gin.Context) {
+			c.Set("openid", "user_me") // ← 当前用户是 user_me
+			hdl.GetOccupiedSlots(c)
+		})
+
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp Response
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		slots := resp.Data.([]interface{})
+		slot := slots[0].(map[string]interface{})
+		assert.Equal(t, "approved", slot["status"])
+		assert.Equal(t, false, slot["is_mine"],
+			"他人的时段 is_mine 应为 false")
+	})
+
+	t.Run("未认证用户查询_context无openid_all_is_mine为false", func(t *testing.T) {
+		// 目的：即使 AuthMiddleware 未注入 openid（异常情况），
+		// handler 应安全降级，不 panic，且所有 is_mine 为 false
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 3, StartTime: time.Date(2026, 3, 25, 13, 0, 0, 0, time.Local),
+						EndTime: time.Date(2026, 3, 25, 15, 0, 0, 0, time.Local),
+						Status:  reservationdb.StatusApproved,
+					},
+					OpenID: "some_user", // ← 数据库中属于某个用户
+				},
+			}, nil)
+
+		// 不设置 openid 上下文（模拟未认证场景）
+		r := gin.New()
+		r.GET("/api/reservation/reservation/occupied", hdl.GetOccupiedSlots)
+
+		req, _ := http.NewRequest("GET", "/api/reservation/reservation/occupied?date=2026-03-25", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		// 验证不会 panic，正常返回 200
+		assert.Equal(t, http.StatusOK, w.Code)
+		var resp Response
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.Equal(t, 200, resp.Code)
+
+		slots := resp.Data.([]interface{})
+		slot := slots[0].(map[string]interface{})
+		assert.Equal(t, false, slot["is_mine"],
+			"未认证时 is_mine 必须为 false，防止泄露归属信息")
 	})
 }

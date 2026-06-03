@@ -138,6 +138,21 @@ func (mr *MockReservationRepositoryMockRecorder) FindSlotsByTimeRange(start, end
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSlotsByTimeRange", reflect.TypeOf((*MockReservationRepository)(nil).FindSlotsByTimeRange), start, end)
 }
 
+// FindSlotsWithOpenIDByTimeRange mocks base method.
+func (m *MockReservationRepository) FindSlotsWithOpenIDByTimeRange(start, end time.Time) ([]reservationdb.SlotWithOpenID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSlotsWithOpenIDByTimeRange", start, end)
+	ret0, _ := ret[0].([]reservationdb.SlotWithOpenID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSlotsWithOpenIDByTimeRange indicates an expected call of FindSlotsWithOpenIDByTimeRange.
+func (mr *MockReservationRepositoryMockRecorder) FindSlotsWithOpenIDByTimeRange(start, end any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSlotsWithOpenIDByTimeRange", reflect.TypeOf((*MockReservationRepository)(nil).FindSlotsWithOpenIDByTimeRange), start, end)
+}
+
 // UpdateSlotStatus mocks base method.
 func (m *MockReservationRepository) UpdateSlotStatus(slotID uint, status int) error {
 	m.ctrl.T.Helper()

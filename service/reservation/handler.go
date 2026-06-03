@@ -156,20 +156,29 @@ func (h *ReservationHandler) GetMyReservations(c *gin.Context) {
 // GetOccupiedSlots 获取指定日期的已占用时间段。
 //
 //	@Summary		获取已占用时段
-//	@Description	查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态
+//	@Description	查询指定日期内已被预约（待审核/已通过）的时段，用于前端日历展示不可选状态。
+//					认证用户会标记 is_mine 字段以区分自己的预约和他人的预约。
 //	@Tags			预约-用户端
 //	@Produce		json
 //	@Param			date	query		string	false	"日期，格式 2006-01-02，默认当天"
-//	@Success		200		{object}	Response{data=[]TimeSlotResp}	"已占用时段列表"
+//	@Success		200		{object}	Response{data=[]TimeSlotResp}	"已占用时段列表（含 is_mine 字段）"
 //	@Failure		400		{object}	Response						"日期格式错误"
+//	@Security		BearerAuth
 //	@Router			/api/reservation/reservation/occupied [get]
 func (h *ReservationHandler) GetOccupiedSlots(c *gin.Context) {
+	// 获取查询日期参数，默认为当天
 	date := c.Query("date")
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
 
-	slots, err := h.svc.GetOccupiedSlots(date)
+	// 从上下文提取当前用户 openid
+	// AuthMiddleware 确保此端点已通过认证；
+	// 获取失败时传空字符串，服务层会将所有时段 is_mine 设为 false
+	openid, _ := getOpenID(c)
+
+	// 调用服务层查询，传入 openid 以标记 is_mine
+	slots, err := h.svc.GetOccupiedSlots(date, openid)
 	if err != nil {
 		log.Printf("[error][handler/GetOccupiedSlots] 查询失败: %v", err)
 		badRequest(c, err.Error())

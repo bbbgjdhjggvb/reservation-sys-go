@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -504,7 +505,7 @@ func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 	svc := NewReservationService(mockRepo)
 
 	t.Run("invalid_date_format", func(t *testing.T) {
-		result, err := svc.GetOccupiedSlots("not-a-date")
+		result, err := svc.GetOccupiedSlots("not-a-date", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "日期格式错误")
 		assert.Nil(t, result)
@@ -512,10 +513,10 @@ func TestReservationService_GetOccupiedSlots_Error(t *testing.T) {
 
 	t.Run("db_error", func(t *testing.T) {
 		mockRepo.EXPECT().
-			FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db connection error"))
 
-		result, err := svc.GetOccupiedSlots("2026-03-25")
+		result, err := svc.GetOccupiedSlots("2026-03-25", "")
 		assert.Error(t, err)
 		assert.Nil(t, result)
 	})
@@ -565,16 +566,17 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 	svc := NewReservationService(mockRepo)
 
 	testDate := "2026-03-25"
-	mockSlots := []reservationdb.ReservationSlot{
-		{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1},
-		{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved},
+	mockSlots := []reservationdb.SlotWithOpenID{
+		{ReservationSlot: reservationdb.ReservationSlot{ID: 1, StartTime: mustTime("2026-03-25 08:00:00"), EndTime: mustTime("2026-03-25 10:00:00"), Status: reservationdb.StatusPendingLevel1}, OpenID: "user_a"},
+		{ReservationSlot: reservationdb.ReservationSlot{ID: 2, StartTime: mustTime("2026-03-25 13:00:00"), EndTime: mustTime("2026-03-25 15:00:00"), Status: reservationdb.StatusApproved}, OpenID: "user_b"},
 	}
 
 	mockRepo.EXPECT().
-		FindSlotsByTimeRange(gomock.Any(), gomock.Any()).
+		FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
 		Return(mockSlots, nil)
 
-	result, err := svc.GetOccupiedSlots(testDate)
+	// 以 user_a 身份查询，验证 is_mine 标记
+	result, err := svc.GetOccupiedSlots(testDate, "user_a")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 
@@ -591,10 +593,12 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 
 	t.Run("pending_status", func(t *testing.T) {
 		assert.Equal(t, "pending", result[0].Status, "待审核时段应返回 'pending'")
+		assert.True(t, result[0].IsMine, "user_a 的 pending 时段 is_mine 应为 true")
 	})
 
 	t.Run("approved_status", func(t *testing.T) {
 		assert.Equal(t, "approved", result[1].Status, "已通过时段应返回 'approved'")
+		assert.False(t, result[1].IsMine, "user_b 的 approved 时段 is_mine 应为 false")
 	})
 
 	t.Run("exact_time_values", func(t *testing.T) {
@@ -602,5 +606,174 @@ func TestReservationService_GetOccupiedSlots_Format(t *testing.T) {
 		assert.Equal(t, "2026-03-25 10:00", result[0].EndTime)
 		assert.Equal(t, "2026-03-25 13:00", result[1].StartTime)
 		assert.Equal(t, "2026-03-25 15:00", result[1].EndTime)
+	})
+}
+
+// ========== GetOccupiedSlots is_mine 归属标记 ==========
+//
+// 测试 service.go 文件中
+// func (s *ReservationService) GetOccupiedSlots(date string, openid string) ([]TimeSlotResp, error)
+//
+// 函数功能：获取指定日期的已占用时段，并通过比对 openid 标记 is_mine 字段，
+// 区分"自己的预约"和"他人的预约"。
+//
+// 测试场景：
+// 1. 自己的 pending 时段 is_mine 为 true
+//    - 目的：验证当 slot.OpenID == 当前用户 openid 时，pending 状态的 is_mine 标记正确
+//    - 预期：Status="pending", IsMine=true
+// 2. 自己的 approved 时段 is_mine 为 true
+//    - 目的：验证已通过状态下的 is_mine 标记正确
+//    - 预期：Status="approved", IsMine=true
+// 3. 他人的时段 is_mine 为 false
+//    - 目的：验证当 slot.OpenID != 当前用户 openid 时，is_mine 为 false
+//    - 预期：Status="pending" 或 "approved", IsMine=false
+// 4. openid 为空字符串时所有 is_mine 为 false
+//    - 目的：防御性测试 — 未登录或中间件异常时 openid 为空，不应误标记
+//    - 预期：所有 IsMine=false，即使某些 slot 的 OpenID 也是空字符串
+// 5. 混合场景 — 自己的 + 他人的 + 已通过的
+//    - 目的：验证在同一天多个订单混合时 is_mine 标记互不干扰
+//    - 预期：3 条记录，is_mine 分别为 true/false/true
+func TestReservationService_GetOccupiedSlots_IsMine(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRepo := NewMockReservationRepository(ctrl)
+	svc := NewReservationService(mockRepo)
+
+	testDate := "2026-03-25"
+	currentUser := "current_user_openid"
+
+	t.Run("自己的pending时段_is_mine为true", func(t *testing.T) {
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 1, StartTime: mustTime("2026-03-25 08:00:00"),
+						EndTime: mustTime("2026-03-25 10:00:00"),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: currentUser, // ← 与当前用户匹配
+				},
+			}, nil)
+
+		result, err := svc.GetOccupiedSlots(testDate, currentUser)
+		require.NoError(t, err)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "pending", result[0].Status)
+		assert.True(t, result[0].IsMine, "自己的 pending 时段 is_mine 应为 true")
+	})
+
+	t.Run("自己的approved时段_is_mine为true", func(t *testing.T) {
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 2, StartTime: mustTime("2026-03-25 13:00:00"),
+						EndTime: mustTime("2026-03-25 15:00:00"),
+						Status:  reservationdb.StatusApproved,
+					},
+					OpenID: currentUser, // ← 与当前用户匹配
+				},
+			}, nil)
+
+		result, err := svc.GetOccupiedSlots(testDate, currentUser)
+		require.NoError(t, err)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "approved", result[0].Status)
+		assert.True(t, result[0].IsMine, "自己的 approved 时段 is_mine 应为 true")
+	})
+
+	t.Run("他人的时段_is_mine为false", func(t *testing.T) {
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 3, StartTime: mustTime("2026-03-25 10:00:00"),
+						EndTime: mustTime("2026-03-25 12:00:00"),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: "other_user_openid", // ← 与当前用户不匹配
+				},
+			}, nil)
+
+		result, err := svc.GetOccupiedSlots(testDate, currentUser)
+		require.NoError(t, err)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "pending", result[0].Status)
+		assert.False(t, result[0].IsMine, "他人的时段 is_mine 应为 false")
+	})
+
+	t.Run("openid为空字符串时所有is_mine为false", func(t *testing.T) {
+		// 防御性测试：未登录用户或中间件异常未注入 openid 时，
+		// 传入空字符串，即使 slot 的 OpenID 也是空字符串（异常数据），
+		// 也不应该标记 is_mine=true（openid != "" 保护）
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 4, StartTime: mustTime("2026-03-25 08:00:00"),
+						EndTime: mustTime("2026-03-25 10:00:00"),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: "some_user",
+				},
+			}, nil)
+
+		result, err := svc.GetOccupiedSlots(testDate, "")
+		require.NoError(t, err)
+		assert.Len(t, result, 1)
+		assert.False(t, result[0].IsMine,
+			"openid 为空时 is_mine 必须为 false，防止误标记")
+	})
+
+	t.Run("混合场景_自己的加他人的加已通过的", func(t *testing.T) {
+		// 模拟真实场景：同一天有多个不同用户的订单
+		mockRepo.EXPECT().
+			FindSlotsWithOpenIDByTimeRange(gomock.Any(), gomock.Any()).
+			Return([]reservationdb.SlotWithOpenID{
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 10, StartTime: mustTime("2026-03-25 08:00:00"),
+						EndTime: mustTime("2026-03-25 10:00:00"),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: currentUser, // 自己的 pending
+				},
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 11, StartTime: mustTime("2026-03-25 10:00:00"),
+						EndTime: mustTime("2026-03-25 12:00:00"),
+						Status:  reservationdb.StatusPendingLevel1,
+					},
+					OpenID: "other_user", // 他人的 pending
+				},
+				{
+					ReservationSlot: reservationdb.ReservationSlot{
+						ID: 12, StartTime: mustTime("2026-03-25 13:00:00"),
+						EndTime: mustTime("2026-03-25 15:00:00"),
+						Status:  reservationdb.StatusApproved,
+					},
+					OpenID: currentUser, // 自己的 approved
+				},
+			}, nil)
+
+		result, err := svc.GetOccupiedSlots(testDate, currentUser)
+		require.NoError(t, err)
+		assert.Len(t, result, 3)
+
+		// 自己的 pending → is_mine=true, status=pending
+		assert.Equal(t, "pending", result[0].Status)
+		assert.True(t, result[0].IsMine, "slot[0] 是 current_user 的 pending，is_mine 应为 true")
+
+		// 他人的 pending → is_mine=false, status=pending
+		assert.Equal(t, "pending", result[1].Status)
+		assert.False(t, result[1].IsMine, "slot[1] 是 other_user 的 pending，is_mine 应为 false")
+
+		// 自己的 approved → is_mine=true, status=approved
+		assert.Equal(t, "approved", result[2].Status)
+		assert.True(t, result[2].IsMine, "slot[2] 是 current_user 的 approved，is_mine 应为 true")
 	})
 }
