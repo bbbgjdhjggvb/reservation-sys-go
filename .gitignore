@@ -23,3 +23,6 @@ dist/
 # 前端依赖
 frontend/node_modules/
 frontend/packages/*/node_modules/
+
+# 辅助编程的文档
+doc/
