@@ -163,7 +163,7 @@ async function doSubmit() {
           <!-- 5. Floating Bottom Action Bar -->
           <section class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] px-6 py-4 z-50 md:rounded-b-3xl">
             <!-- Legend -->
-            <div class="flex items-center justify-between text-[10px] text-gray-400 mb-3 px-1">
+            <div class="flex items-center justify-between text-[10px] text-gray-400 mb-3 px-1 flex-wrap gap-y-1">
               <div class="flex items-center space-x-1">
                 <span class="w-2.5 h-2.5 rounded bg-white border border-gray-200" />
                 <span>可选</span>
@@ -179,6 +179,10 @@ async function doSubmit() {
               <div class="flex items-center space-x-1">
                 <span class="w-2.5 h-2.5 rounded stripe-bg border border-red-100" />
                 <span class="text-red-400 font-bold">已占用</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <span class="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200" />
+                <span class="text-emerald-600 font-bold">已通过</span>
               </div>
               <div class="flex items-center space-x-1">
                 <span class="w-2.5 h-2.5 rounded bg-gray-100 border border-gray-200" />

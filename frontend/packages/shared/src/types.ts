@@ -21,10 +21,14 @@ export interface TimeSlotReq {
   end_time: string // "2026-01-01 10:00:00"
 }
 
+/** 日历已占用时段。后端通过 LEFT JOIN 附带 open_id 来判断归属，
+ *  前端通过 is_mine 区分"我的预约"和"他人的预约"并渲染不同样式。 */
 export interface OccupiedSlot {
   start_time: string
   end_time: string
   status: 'pending' | 'approved'
+  /** 是否属于当前登录用户。后端比对 openid 后设置，未登录时为 false。 */
+  is_mine: boolean
 }
 
 // ========== Order ==========
