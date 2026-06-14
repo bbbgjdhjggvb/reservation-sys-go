@@ -26,3 +26,6 @@ frontend/packages/*/node_modules/
 
 # 辅助编程的文档
 doc/
+
+# 配置文件
+service/*/configs/
