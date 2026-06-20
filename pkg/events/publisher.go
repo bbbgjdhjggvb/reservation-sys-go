@@ -119,10 +119,17 @@ func GetPublisher() *EventPublisher {
 	return globalPublisher
 }
 
+// getPublisherSafe 安全获取全局事件发布器。
+// 若未初始化返回 nil，不 panic。仅供便捷发布函数内部使用。
+// 便捷发布函数是可选增强功能，未初始化时应安全降级而非阻断业务。
+func getPublisherSafe() *EventPublisher {
+	return globalPublisher
+}
+
 // ========== 便捷发布函数 ==========
 
 // PublishOrderCreated 发布"新预约提交"事件的便捷函数。
-// 内部自动填充 Type 和 Timestamp，调用方只需传 OrderID。
+// 若 Publisher 未初始化（如测试环境），安全降级返回 nil，不阻断业务。
 //
 // 参数:
 //   - orderID: 新创建的订单 ID
@@ -130,13 +137,18 @@ func GetPublisher() *EventPublisher {
 // 返回值:
 //   - error: 发布失败时返回错误（调用方应记录日志但不中断业务）
 func PublishOrderCreated(orderID uint) error {
-	return GetPublisher().Publish(&OrderEvent{
+	pub := getPublisherSafe()
+	if pub == nil {
+		return nil
+	}
+	return pub.Publish(&OrderEvent{
 		Type:    EventTypeOrderCreated,
 		OrderID: orderID,
 	})
 }
 
 // PublishOrderCancelled 发布"预约取消"事件的便捷函数。
+// 若 Publisher 未初始化（如测试环境），安全降级返回 nil，不阻断业务。
 //
 // 参数:
 //   - orderID: 被取消的订单 ID
@@ -144,13 +156,18 @@ func PublishOrderCreated(orderID uint) error {
 // 返回值:
 //   - error: 发布失败时返回错误（调用方应记录日志但不中断业务）
 func PublishOrderCancelled(orderID uint) error {
-	return GetPublisher().Publish(&OrderEvent{
+	pub := getPublisherSafe()
+	if pub == nil {
+		return nil
+	}
+	return pub.Publish(&OrderEvent{
 		Type:    EventTypeOrderCancelled,
 		OrderID: orderID,
 	})
 }
 
 // PublishOrderReviewed 发布"审核操作"事件的便捷函数。
+// 若 Publisher 未初始化（如测试环境），安全降级返回 nil，不阻断业务。
 //
 // 参数:
 //   - orderID: 被审核的订单 ID
@@ -158,13 +175,18 @@ func PublishOrderCancelled(orderID uint) error {
 // 返回值:
 //   - error: 发布失败时返回错误（调用方应记录日志但不中断业务）
 func PublishOrderReviewed(orderID uint) error {
-	return GetPublisher().Publish(&OrderEvent{
+	pub := getPublisherSafe()
+	if pub == nil {
+		return nil
+	}
+	return pub.Publish(&OrderEvent{
 		Type:    EventTypeOrderReviewed,
 		OrderID: orderID,
 	})
 }
 
 // PublishSlotUpdated 发布"时段更新"事件的便捷函数。
+// 若 Publisher 未初始化（如测试环境），安全降级返回 nil，不阻断业务。
 //
 // 参数:
 //   - orderID: 关联的订单 ID（时段更新时通过 orderID 关联）
@@ -172,7 +194,11 @@ func PublishOrderReviewed(orderID uint) error {
 // 返回值:
 //   - error: 发布失败时返回错误（调用方应记录日志但不中断业务）
 func PublishSlotUpdated(orderID uint) error {
-	return GetPublisher().Publish(&OrderEvent{
+	pub := getPublisherSafe()
+	if pub == nil {
+		return nil
+	}
+	return pub.Publish(&OrderEvent{
 		Type:    EventTypeSlotUpdated,
 		OrderID: orderID,
 	})
