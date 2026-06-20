@@ -6,9 +6,11 @@ import (
 	"os"
 	"time"
 
+	"reservation-sys/pkg/events"
 	"reservation-sys/pkg/jwt"
 	"reservation-sys/pkg/platform"
 	reservationdb "reservation-sys/pkg/reservationdb"
+	"reservation-sys/pkg/sse"
 	"reservation-sys/service/reservation"
 	resconfig "reservation-sys/service/reservation/config"
 	"reservation-sys/service/reservation/middleware"
@@ -60,6 +62,17 @@ func main() {
 	// 初始化预约服务模块
 	reservation.InitModule()
 
+	// ========== 初始化 SSE 实时推送 ==========
+	// 1. 初始化全局事件发布器（Submit/Cancel 后发布事件到 Redis）
+	events.InitPublisher(redisClient)
+
+	// 2. 创建 Redis 事件订阅器（监听其他服务发布的事件）
+	sseSubscriber := sse.NewEventSubscriber(redisClient)
+	defer sseSubscriber.Close()
+
+	// 3. 创建 SSE Hub（管理客户端连接池，转发 Redis 消息到 SSE 客户端）
+	sseHub := sse.NewSSEHub(sseSubscriber)
+
 	resSvc := reservation.GetReservationService()
 	resHdl := reservation.NewReservationHandler(resSvc)
 
@@ -69,6 +82,10 @@ func main() {
 
 	api := r.Group("/api/reservation")
 	{
+		// SSE 端点（无需认证，推送不含敏感数据，参见文档 7.2.2）
+		// 客户端通过此端点接收订单变更通知，收到通知后仍需通过 REST API 拉取完整数据
+		api.GET("/events", sse.Handler(sseHub))
+
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware())
 		{

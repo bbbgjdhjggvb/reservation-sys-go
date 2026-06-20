@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCalendar } from '@/composables/useCalendar'
 import { useToast } from '@/composables/useToast'
+import { useReservationSSE } from '@/composables/useSSE'
 import { api } from '@/api/client'
 import DateAxis from '@/components/DateAxis.vue'
 import TimeSlotCard from '@/components/TimeSlotCard.vue'
@@ -17,6 +18,10 @@ const auth = useAuthStore()
 const cal = useCalendar()
 const { selectedSlots, activeDayIndex, visibleDays, activeDateStr, TIME_SLOTS } = cal
 const { showToast } = useToast()
+
+// 建立 SSE 实时推送连接，监听订单变更后自动刷新日历
+// 若 SSE 不可用，自动降级为 15s 轮询
+useReservationSSE()
 
 const currentStep = ref<1 | 2>(1)
 const showConfirm = ref(false)

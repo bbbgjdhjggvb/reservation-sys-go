@@ -1,7 +1,6 @@
 # 生产环境 Docker Compose 配置
 # 使用方法: docker-compose -f docker-compose.prod.yaml up -d
-
-version: "3.8"
+# 配置热更新: 修改宿主机配置文件后执行 docker-compose restart <service>
 
 services:
   # ============ 基础设施 ============
@@ -52,6 +51,9 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - CONFIG_PATH=service/gateway/configs/config_v1.yaml
+    volumes:
+      # 挂载配置文件目录，支持在宿主机修改配置后 restart 热更新
+      - ./service/gateway/configs:/app/service/gateway/configs:ro
     networks:
       - reservation-net
 
@@ -62,9 +64,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
       - CONFIG_PATH=service/reservation/configs/config_v2.yaml
+    volumes:
+      # 挂载配置文件目录，支持在宿主机修改配置后 restart 热更新
+      - ./service/reservation/configs:/app/service/reservation/configs:ro
     networks:
       - reservation-net
 
@@ -75,9 +82,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      gateway:
+        condition: service_started
     environment:
       - TZ=Asia/Shanghai
       - CONFIG_PATH=service/admin/configs/config_v3.yaml
+    volumes:
+      # 挂载配置文件目录，支持在宿主机修改配置后 restart 热更新
+      - ./service/admin/configs:/app/service/admin/configs:ro
     networks:
       - reservation-net
 

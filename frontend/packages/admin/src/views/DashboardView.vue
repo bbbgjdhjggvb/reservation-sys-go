@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
 import { useAdminOrders } from '@/composables/useAdminOrders'
+import { useAdminSSE } from '@/composables/useSSE'
 import { adminApi } from '@/api/client'
 import type { OrderResp } from '@reservation/shared'
 import AdminHeader from '@/components/AdminHeader.vue'
@@ -18,6 +19,11 @@ const router = useRouter()
 const admin = useAdminStore()
 const store = useAdminOrders()
 const { orders, total, currentPage, currentStatus, loading } = store
+
+// 建立 SSE 实时推送连接，监听订单变更后自动刷新列表
+// 若 SSE 不可用，自动降级为 10s 轮询
+// 传入 store.fetchOrders 确保操作的是与视图绑定的同一 useAdminOrders 实例
+useAdminSSE(store.fetchOrders)
 
 const detailOrderId = ref<number | null>(null)
 const showReviewModal = ref(false)

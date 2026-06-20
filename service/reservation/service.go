@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"reservation-sys/pkg/events"
 	reservationdb "reservation-sys/pkg/reservationdb"
 
 	"gorm.io/gorm"
@@ -96,6 +97,13 @@ func (s *ReservationService) Submit(openid string, slots []ParsedSlot, req *Subm
 	if err := s.repo.CreateOrderWithLock(order, slotRecords); err != nil {
 		log.Printf("[error][service/Submit] 创建订单失败: %v", err)
 		return nil, fmt.Errorf("创建预约失败: %v", err)
+	}
+
+	// 发布"新预约提交"事件到 Redis Pub/Sub
+	// 通知其他服务（Admin SSE 刷新订单列表，Reservation SSE 刷新其他用户的日历）
+	// 发布失败不影响业务：前端降级轮询会在 15s 内同步数据
+	if err := events.PublishOrderCreated(order.ID); err != nil {
+		log.Printf("[warning][service/Submit] 发布事件失败: %v", err)
 	}
 
 	return order, nil
@@ -214,7 +222,17 @@ func (s *ReservationService) Cancel(orderID uint, openid string) error {
 		return fmt.Errorf("当前状态无法取消")
 	}
 
-	return s.repo.CancelOrder(orderID, openid)
+	if err := s.repo.CancelOrder(orderID, openid); err != nil {
+		return err
+	}
+
+	// 发布"预约取消"事件到 Redis Pub/Sub
+	// 通知其他服务刷新数据（该时段变为可用，管理员订单列表状态变为已取消）
+	if err := events.PublishOrderCancelled(orderID); err != nil {
+		log.Printf("[warning][service/Cancel] 发布事件失败: %v", err)
+	}
+
+	return nil
 }
 
 // generateOrderNo 生成订单号，格式: R{时间戳14位}{4位随机hex}。

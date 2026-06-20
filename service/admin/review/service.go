@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"reservation-sys/pkg/constants"
+	"reservation-sys/pkg/events"
 	reservationdb "reservation-sys/pkg/reservationdb"
 )
 
@@ -75,6 +76,12 @@ func (s *ReviewService) Level1Review(adminID uint, orderID uint, req *ReviewActi
 		log.Printf("[error] 创建一级审核记录失败: %v", err)
 	}
 
+	// 发布"审核操作"事件到 Redis Pub/Sub
+	// 通知 Reservation SSE 刷新用户预约状态，通知其他管理员的订单列表
+	if err := events.PublishOrderReviewed(orderID); err != nil {
+		log.Printf("[warning][review/Level1Review] 发布事件失败: %v", err)
+	}
+
 	return nil
 }
 
@@ -125,6 +132,12 @@ func (s *ReviewService) Level2Review(adminID uint, orderID uint, req *ReviewActi
 		log.Printf("[error] 创建二级审核记录失败: %v", err)
 	}
 
+	// 发布"审核操作"事件到 Redis Pub/Sub
+	// 通知 Reservation SSE 刷新用户预约状态，通知其他管理员的订单列表
+	if err := events.PublishOrderReviewed(orderID); err != nil {
+		log.Printf("[warning][review/Level2Review] 发布事件失败: %v", err)
+	}
+
 	return nil
 }
 
@@ -157,7 +170,17 @@ func (s *ReviewService) SetPassword(adminRole int, orderID uint, slotID uint, pa
 		return fmt.Errorf("仅审核通过的订单可设置门锁密码")
 	}
 
-	return s.repo.SetSlotPassword(slotID, password)
+	if err := s.repo.SetSlotPassword(slotID, password); err != nil {
+		return err
+	}
+
+	// 发布"时段更新"事件到 Redis Pub/Sub
+	// 通知其他管理员刷新订单详情（密码已设置）
+	if err := events.PublishSlotUpdated(orderID); err != nil {
+		log.Printf("[warning][review/SetPassword] 发布事件失败: %v", err)
+	}
+
+	return nil
 }
 
 // GetOrderDetail 获取订单详情（含审核记录）。

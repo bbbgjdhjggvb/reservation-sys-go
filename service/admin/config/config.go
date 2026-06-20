@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Server baseconfig.ServerConfig `yaml:"server"`
 	MySQL  baseconfig.MySQLConfig  `yaml:"mysql"`
+	Redis  baseconfig.RedisConfig  `yaml:"redis"` // SSE 实时推送需要 Redis Pub/Sub
 	JWT    baseconfig.JwtConfig    `yaml:"jwt"`
 	GRPC   GRPCConfig              `yaml:"grpc"`
 }
@@ -41,6 +42,11 @@ func Get() *Config {
 // GetMySQL 获取 MySQL 配置
 func GetMySQL() *baseconfig.MySQLConfig {
 	return &cfg.MySQL
+}
+
+// GetRedis 获取 Redis 配置（SSE 实时推送使用）
+func GetRedis() *baseconfig.RedisConfig {
+	return &cfg.Redis
 }
 
 // GetJWT 获取 JWT 配置
