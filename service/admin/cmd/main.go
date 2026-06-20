@@ -6,10 +6,12 @@ import (
 	"time"
 	"os"
 
+	"reservation-sys/pkg/events"
 	"reservation-sys/pkg/grpc"
 	"reservation-sys/pkg/jwt"
 	"reservation-sys/pkg/platform"
 	reservationdb "reservation-sys/pkg/reservationdb"
+	"reservation-sys/pkg/sse"
 	"reservation-sys/service/admin/auth"
 	adminconfig "reservation-sys/service/admin/config"
 	"reservation-sys/service/admin/review"
@@ -69,6 +71,12 @@ func main() {
 	jwtCfg := adminconfig.GetJWT()
 	jwt.InitAdminJWT(jwtCfg.Secret, jwtCfg.ExpireTime)
 
+	// ========== 初始化 Redis 连接（SSE 实时推送需要 Redis Pub/Sub） ==========
+	redisClient, err := platform.InitRedis(adminconfig.GetRedis())
+	if err != nil {
+		log.Fatalf("[admin] Redis 初始化失败: %v", err)
+	}
+
 	// ========== 连接 Gateway gRPC 服务（通知 + 账号验证） ==========
 	gatewayConn, err := grpc.Connect(cfg.GRPC.GatewayAddr)
 	if err != nil {
@@ -87,6 +95,17 @@ func main() {
 	// ========== 初始化审核模块 ==========
 	review.InitModule(notifyClient)
 
+	// ========== 初始化 SSE 实时推送 ==========
+	// 1. 初始化全局事件发布器（Review/SetPassword 后发布事件到 Redis）
+	events.InitPublisher(redisClient)
+
+	// 2. 创建 Redis 事件订阅器（监听 Reservation 服务发布的事件）
+	sseSubscriber := sse.NewEventSubscriber(redisClient)
+	defer sseSubscriber.Close()
+
+	// 3. 创建 SSE Hub（管理管理员客户端连接池）
+	sseHub := sse.NewSSEHub(sseSubscriber)
+
 	reviewSvc := review.GetReviewService()
 	repo := reservationdb.GetRepository()
 	notifyHdl := review.NewNotifyHandler(notifyClient, repo)
@@ -100,6 +119,10 @@ func main() {
 	api := r.Group("/api/admin")
 	{
 		api.POST("/auth/login", adminHdl.LoginHandler)
+
+		// SSE 端点（无需认证，推送不含敏感数据，参见文档 7.2.2）
+		// 管理员通过此端点接收订单变更通知（新预约提交、其他管理员的审核操作等）
+		api.GET("/events", sse.Handler(sseHub))
 
 		protected := api.Group("")
 		protected.Use(auth.AdminAuthMiddleware())

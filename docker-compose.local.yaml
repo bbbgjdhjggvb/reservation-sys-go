@@ -6,8 +6,6 @@
 #   - Reservation: 面向用户的预约 HTTP 服务，使用共享预约数据库(home_res)
 #   - Admin: 管理员审核 HTTP 服务，使用共享预约数据库(home_res)，通过 gRPC 调用 Gateway
 
-version: "3.8"
-
 services:
   # ============ 基础设施 ============
 

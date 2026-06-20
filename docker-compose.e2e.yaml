@@ -7,8 +7,6 @@
 #   3. 不挂载 SSL 证书
 #   4. nginx 添加 health 端点
 
-version: "3.8"
-
 services:
   # ============ 基础设施 ============
 
