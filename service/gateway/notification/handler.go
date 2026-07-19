@@ -48,15 +48,12 @@ func (h *NotificationHandler) ProcessMessage(oa *officialaccount.OfficialAccount
 
 	if msg.MsgType == message.MsgTypeEvent {
 		switch msg.Event {
-		// 处理关注事件
+		// 处理关注事件（仅入库，不发送消息）
 		case message.EventSubscribe:
 			if err := h.svc.HandleSubscribe(oa, string(msg.FromUserName)); err != nil {
 				log.Printf("[NotificationHandler][Fatal] HandleSubscribe failed: %v, openid: %s", err, msg.FromUserName)
 			}
-			return &message.Reply{
-				MsgType: message.MsgTypeText,
-				MsgData: message.NewText("欢迎关注场地预约系统！\n点击下方菜单即可开始预约。"),
-			}
+			return nil
 
 		case message.EventUnsubscribe:
 			if err := h.svc.HandleUnsubscribe(string(msg.FromUserName)); err != nil {
