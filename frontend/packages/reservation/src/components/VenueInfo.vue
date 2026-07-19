@@ -1,10 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import alumniGate from '@/assets/alumni_gate.png'
 import guidImg from '@/assets/guid.jpg'
 
 const showGuide = ref(false)
 const showRules = ref(false)
+
+const venueStatus = computed(() => {
+  const now = new Date()
+  const day = now.getDay()           // 0=周日, 1=周一, ..., 6=周六
+  const minutes = now.getHours() * 60 + now.getMinutes()
+
+  const isMonThu = day >= 1 && day <= 4  // 周一 ~ 周四
+  const isFriSun = day === 5 || day === 6 || day === 0  // 周五 ~ 周日
+
+  if (isMonThu && minutes >= 14*60+30 && minutes < 17*60+30) {
+    return { text: '开放中', open: true }
+  }
+  if (isFriSun && minutes >= 9*60 && minutes < 17*60+30) {
+    return { text: '开放中', open: true }
+  }
+  return { text: '休息中', open: false }
+})
 
 function lockBodyScroll() {
   document.body.style.overflow = 'hidden'
@@ -36,10 +53,10 @@ function closeAll() {
       <div class="relative h-32 md:h-36 w-full overflow-hidden bg-gray-50 flex-shrink-0">
         <img :src="alumniGate" alt="校友之家" class="w-full h-full object-cover" />
 
-        <!-- "开放中" status badge -->
+        <!-- Dynamic open/closed status badge (8:00-20:00 = open) -->
         <div class="absolute top-3 left-3 bg-black/60 text-[9px] text-white px-2.5 py-1 rounded-full flex items-center space-x-1.5 backdrop-blur-[2px]">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span class="font-bold">开放中</span>
+          <span :class="['w-1.5 h-1.5 rounded-full', venueStatus.open ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400']" />
+          <span class="font-bold">{{ venueStatus.text }}</span>
         </div>
       </div>
 

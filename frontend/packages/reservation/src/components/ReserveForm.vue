@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { useCalendar } from '@/composables/useCalendar'
 import { useToast } from '@/composables/useToast'
-import { ALUMNI_OPTIONS } from '@reservation/shared'
 import AlumniAutocomplete from './AlumniAutocomplete.vue'
 import type { SubmitReq } from '@reservation/shared'
 
@@ -26,7 +25,7 @@ const reason = ref('')
 function handleSubmit() {
   if (!name.value.trim()) { showToast('请填写申请人姓名', 'error'); return }
   if (!year.value.trim() || !/^\d{4}$/.test(year.value)) { showToast('请填写正确的入学年级（4位数字）', 'error'); return }
-  if (!alumniValue.value || !ALUMNI_OPTIONS.includes(alumniValue.value)) { showToast('请从列表中选择校友会', 'error'); return }
+  if (!alumniValue.value.trim()) { showToast('请填写校友会', 'error'); return }
   if (!major.value.trim()) { showToast('请填写专业', 'error'); return }
   if (!phone.value.trim() || !/^\d{11}$/.test(phone.value)) { showToast('请填写正确的手机号码（11位数字）', 'error'); return }
   if (!reason.value.trim()) { showToast('请填写借用事由', 'error'); return }
@@ -92,11 +91,6 @@ function handleSubmit() {
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">校友会</label>
-        <AlumniAutocomplete v-model="alumniValue" />
-      </div>
-
-      <div>
         <label class="block text-sm font-medium text-gray-700 mb-1" for="reserve-major">专业</label>
         <input
           id="reserve-major"
@@ -109,6 +103,11 @@ function handleSubmit() {
           style="font-size: 16px;"
           placeholder="请输入专业名称…"
         />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">校友会</label>
+        <AlumniAutocomplete v-model="alumniValue" />
       </div>
 
       <div>

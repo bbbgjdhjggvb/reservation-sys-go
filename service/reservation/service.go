@@ -198,6 +198,9 @@ func (s *ReservationService) GetOccupiedSlots(date string, openid string) ([]Tim
 
 // Cancel 取消预约订单（校验归属和状态后事务内更新订单+时段为已取消）。
 //
+// 允许从"待一级审核"(1)、"待二级审核"(2)和"审核通过"(5)状态取消。
+// 审核通过的订单距最早预约时段开始时间不足24小时时不可取消。
+//
 // 参数:
 //   - orderID: 订单ID
 //   - openid: 用户 openid（校验归属，防止越权取消）
@@ -218,8 +221,26 @@ func (s *ReservationService) Cancel(orderID uint, openid string) error {
 		return fmt.Errorf("无权操作此预约")
 	}
 
-	if order.Status != reservationdb.StatusPendingLevel1 {
+	if order.Status != reservationdb.StatusPendingLevel1 &&
+		order.Status != reservationdb.StatusPendingLevel2 &&
+		order.Status != reservationdb.StatusApproved {
 		return fmt.Errorf("当前状态无法取消")
+	}
+
+	// 审核通过的订单：检查距最早时段开始时间是否不足2小时
+	if order.Status == reservationdb.StatusApproved {
+		if len(order.Slots) == 0 {
+			return fmt.Errorf("订单无时段信息")
+		}
+		earliestStart := order.Slots[0].StartTime
+		for _, slot := range order.Slots[1:] {
+			if slot.StartTime.Before(earliestStart) {
+				earliestStart = slot.StartTime
+			}
+		}
+		if time.Until(earliestStart) < 24*time.Hour {
+			return fmt.Errorf("距预约开始不足24小时，无法取消")
+		}
 	}
 
 	if err := s.repo.CancelOrder(orderID, openid); err != nil {
