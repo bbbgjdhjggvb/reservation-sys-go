@@ -141,6 +141,20 @@ function selectItem(value: string) {
 
 function handleBlur() {
   setTimeout(() => {
+    const val = inputValue.value.trim()
+    if (val) {
+      // 尝试匹配已有选项（允许输入不带"校友会"后缀的简称）
+      const matched = ALUMNI_OPTIONS.find(
+        opt => opt === val || opt.replace(/校友会$/, '') === val
+      )
+      if (matched) {
+        inputValue.value = matched.replace(/校友会$/, '')
+        emit('update:modelValue', matched)
+      } else {
+        // 列表中无匹配，作为自定义值接受
+        emit('update:modelValue', val)
+      }
+    }
     showDropdown.value = false
   }, 150)
 }

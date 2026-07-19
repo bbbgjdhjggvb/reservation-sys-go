@@ -64,10 +64,10 @@ type Repository interface {
 	//   - error: 状态不匹配时返回 "订单状态不匹配，无法执行此操作"
 	UpdateOrderStatus(orderID uint, fromStatus, toStatus int) error
 
-	// CancelOrder 用户取消订单（事务内同时更新订单和时段状态为已取消，仅允许从等待一级审核状态取消）。
+	// CancelOrder 用户取消订单（事务内同时更新订单和时段状态为已取消，允许从待审核、已通过状态取消）。
 	// SQL: BEGIN;
-	//      UPDATE reservation_orders SET status = 6 WHERE id = ? AND open_id = ? AND status = 1;
-	//      UPDATE reservation_slots SET status = 6 WHERE order_id = ? AND status = 1;
+	//      UPDATE reservation_orders SET status = 6 WHERE id = ? AND open_id = ? AND status IN (1, 2, 5);
+	//      UPDATE reservation_slots SET status = 6 WHERE order_id = ? AND status IN (1, 2, 5);
 	//      COMMIT;
 	// 参数:
 	//   - orderID: 订单ID
@@ -362,13 +362,13 @@ func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) e
 	return nil
 }
 
-// CancelOrder 取消订单（事务内同时更新订单和时段状态，仅允许从等待一级审核状态取消）。
+// CancelOrder 取消订单（事务内同时更新订单和时段状态，允许从待审核、已通过状态取消）。
 //
 // SQL:
 //
 //	BEGIN;
-//	UPDATE reservation_orders SET status = 6, updated_at = NOW() WHERE id = ? AND open_id = ? AND status = 1;
-//	UPDATE reservation_slots SET status = 6, updated_at = NOW() WHERE order_id = ? AND status = 1;
+//	UPDATE reservation_orders SET status = 6, updated_at = NOW() WHERE id = ? AND open_id = ? AND status IN (1, 2, 5);
+//	UPDATE reservation_slots SET status = 6, updated_at = NOW() WHERE order_id = ? AND status IN (1, 2, 5);
 //	COMMIT;
 //
 // 参数:
@@ -380,8 +380,8 @@ func (r *repository) UpdateOrderStatus(orderID uint, fromStatus, toStatus int) e
 func (r *repository) CancelOrder(orderID uint, openid string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&ReservationOrder{}).
-			Where("id = ? AND open_id = ? AND status = ?",
-				orderID, openid, StatusPendingLevel1).
+			Where("id = ? AND open_id = ? AND status IN ?",
+				orderID, openid, []int{StatusPendingLevel1, StatusPendingLevel2, StatusApproved}).
 			Update("status", StatusCancelled)
 
 		if result.Error != nil {
@@ -392,7 +392,7 @@ func (r *repository) CancelOrder(orderID uint, openid string) error {
 		}
 
 		slotResult := tx.Model(&ReservationSlot{}).
-			Where("order_id = ? AND status = ?", orderID, StatusPendingLevel1).
+			Where("order_id = ? AND status IN ?", orderID, []int{StatusPendingLevel1, StatusPendingLevel2, StatusApproved}).
 			Update("status", StatusCancelled)
 
 		if slotResult.Error != nil {

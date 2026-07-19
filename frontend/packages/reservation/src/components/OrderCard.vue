@@ -32,7 +32,7 @@ const SLOT_STATUS_DOT: Record<number, string> = {
 }
 
 function canCancel(status: number): boolean {
-  return status === 1
+  return status === 1 || status === 2 || status === 5
 }
 </script>
 

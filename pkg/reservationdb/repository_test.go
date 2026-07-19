@@ -396,11 +396,11 @@ func TestCancelOrder(t *testing.T) {
 		repo := NewRepository(gormDB)
 
 		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE `reservation_orders` SET `status`=\\?,`updated_at`=\\? WHERE id = \\? AND open_id = \\? AND status = \\?").
-			WithArgs(StatusCancelled, anyTime{}, uint(1), "openid_001", StatusPendingLevel1).
+		mock.ExpectExec("UPDATE `reservation_orders` SET `status`=\\?,`updated_at`=\\? WHERE id = \\? AND open_id = \\? AND status IN \\(\\?,\\?,\\?\\)").
+			WithArgs(StatusCancelled, anyTime{}, uint(1), "openid_001", StatusPendingLevel1, StatusPendingLevel2, StatusApproved).
 			WillReturnResult(sqlmock.NewResult(0, 1))
-		mock.ExpectExec("UPDATE `reservation_slots` SET `status`=\\?,`updated_at`=\\? WHERE order_id = \\? AND status = \\?").
-			WithArgs(StatusCancelled, anyTime{}, uint(1), StatusPendingLevel1).
+		mock.ExpectExec("UPDATE `reservation_slots` SET `status`=\\?,`updated_at`=\\? WHERE order_id = \\? AND status IN \\(\\?,\\?,\\?\\)").
+			WithArgs(StatusCancelled, anyTime{}, uint(1), StatusPendingLevel1, StatusPendingLevel2, StatusApproved).
 			WillReturnResult(sqlmock.NewResult(0, 2))
 		mock.ExpectCommit()
 
@@ -414,8 +414,8 @@ func TestCancelOrder(t *testing.T) {
 		repo := NewRepository(gormDB)
 
 		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE `reservation_orders` SET `status`=\\?,`updated_at`=\\? WHERE id = \\? AND open_id = \\? AND status = \\?").
-			WithArgs(StatusCancelled, anyTime{}, uint(999), "wrong_user", StatusPendingLevel1).
+		mock.ExpectExec("UPDATE `reservation_orders` SET `status`=\\?,`updated_at`=\\? WHERE id = \\? AND open_id = \\? AND status IN \\(\\?,\\?,\\?\\)").
+			WithArgs(StatusCancelled, anyTime{}, uint(999), "wrong_user", StatusPendingLevel1, StatusPendingLevel2, StatusApproved).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.ExpectRollback()
 
