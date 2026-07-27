@@ -109,7 +109,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
     networks:
       - e2e-net
 

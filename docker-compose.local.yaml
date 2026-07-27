@@ -118,7 +118,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./deploy/nginx/nginx.config:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
       - ./dist/reservation/:/usr/share/nginx/html/reservation/:ro
       - ./dist/admin/:/usr/share/nginx/html/admin/:ro
       - ./deploy/ssl:/etc/nginx/ssl:ro
