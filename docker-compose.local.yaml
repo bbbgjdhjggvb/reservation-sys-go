@@ -1,10 +1,7 @@
 # 本地开发 Docker Compose 配置
-# 使用方法: docker-compose -f docker-compose.local.yaml up --build
+# 使用方法: docker compose -f docker-compose.local.yaml up --build
 #
-# 架构说明:
-#   - Gateway: 管理账号数据库(home_xy)，提供 gRPC 通知+账号验证服务
-#   - Reservation: 面向用户的预约 HTTP 服务，使用共享预约数据库(home_res)
-#   - Admin: 管理员审核 HTTP 服务，使用共享预约数据库(home_res)，通过 gRPC 调用 Gateway
+# 架构说明: 单体应用，监听 :8080，通过 Nginx 反向代理统一对外提供服务。
 
 services:
   # ============ 基础设施 ============
@@ -48,11 +45,9 @@ services:
 
   # ============ 应用服务 ============
 
-  # Gateway - 微信服务 + gRPC 服务（通知 + 账号验证）
-  # 数据库: home_xy（users, admins）
-  gateway:
-    image: ${GATEWAY_IMAGE:-reservation-gateway:latest}
-    container_name: reservation-gateway
+  server:
+    image: ${SERVER_IMAGE:-reservation-server:latest}
+    container_name: reservation-server
     restart: unless-stopped
     depends_on:
       mysql:
@@ -61,48 +56,9 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/gateway/configs/config_v1.local.yaml
+      - CONFIG_PATH=configs/config.yaml
     volumes:
-      - ./service/gateway/configs:/app/service/gateway/configs:ro
-    networks:
-      - reservation-net
-
-  # Reservation - 预约服务（HTTP only，无 gRPC）
-  # 数据库: home_res（reservation_orders, reservation_slots, review_records）
-  reservation:
-    image: ${RESERVATION_IMAGE:-reservation-reservation:latest}
-    container_name: reservation-reservation
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/reservation/configs/config_v2.local.yaml
-    volumes:
-      - ./service/reservation/configs:/app/service/reservation/configs:ro
-      - ./service/reservation/frontend:/app/service/reservation/frontend:ro
-    networks:
-      - reservation-net
-
-  # Admin - 管理员审核服务（HTTP + gRPC Client）
-  # 数据库: home_res（通过 pkg/reservationdb 共享）
-  # gRPC: 仅调用 Gateway（通知 + 账号验证）
-  admin:
-    image: ${ADMIN_IMAGE:-reservation-admin:latest}
-    container_name: reservation-admin
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      gateway:
-        condition: service_started
-    environment:
-      - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/admin/configs/config_v3.yaml
-    volumes:
-      - ./service/admin/configs:/app/service/admin/configs:ro
-      - ./service/admin/frontend:/app/service/admin/frontend:ro
+      - ./configs:/app/configs:ro
     networks:
       - reservation-net
 
@@ -112,16 +68,13 @@ services:
     container_name: reservation-nginx
     restart: unless-stopped
     depends_on:
-      - gateway
-      - reservation
-      - admin
+      - server
     ports:
       - "80:80"
     volumes:
-      - ./deploy/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/nginx.local.config:/etc/nginx/nginx.conf:ro
       - ./dist/reservation/:/usr/share/nginx/html/reservation/:ro
       - ./dist/admin/:/usr/share/nginx/html/admin/:ro
-      - ./deploy/ssl:/etc/nginx/ssl:ro
     networks:
       - reservation-net
 

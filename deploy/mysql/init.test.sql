@@ -32,7 +32,7 @@ SET @p60 = DATE_SUB(CURDATE(), INTERVAL 60 DAY);
 -- =============================================
 -- 测试用户
 -- =============================================
-USE home_xy;
+USE reservation_sys;
 
 INSERT INTO `users` (`openid`, `nickname`, `status`) VALUES
 ('test_openid_001', '张三', 1),
@@ -45,7 +45,7 @@ ON DUPLICATE KEY UPDATE `nickname`=VALUES(`nickname`);
 -- =============================================
 -- 预约订单 — 覆盖所有状态（日期相对今天动态偏移）
 -- =============================================
-USE home_res;
+USE reservation_sys;
 
 -- 1. 等待一级审核（单时段）— p5 天前
 INSERT INTO `reservation_orders` (`id`, `order_no`, `open_id`, `applicant_name`, `alumni_association`, `year`, `major`, `reason`, `phone`, `total_slots`, `status`, `created_at`) VALUES

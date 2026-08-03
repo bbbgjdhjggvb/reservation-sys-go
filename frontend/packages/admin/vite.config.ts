@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api/admin': {
-        target: 'http://localhost:8082',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

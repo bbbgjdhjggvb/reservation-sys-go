@@ -1,0 +1,16 @@
+{
+    // 1. 强制 VS Code 的 Go 插件使用指定的本地工具链行为
+    "go.toolsEnvVars": {
+        "GOTOOLCHAIN": "go1.24.0"
+    },
+
+    // 2. 强制 VS Code 内置终端也使用相同的环境变量
+    // 这样你在 VS Code 终端里直接敲 go mod tidy 也不会乱改版本
+    "terminal.integrated.env.linux": {
+        "GOTOOLCHAIN": "go1.24.0"
+    },
+
+    // 3. Live Server 根目录设为 frontend 目录，使 <base href="/"> + static/ 路径正确映射
+    "liveServer.settings.root": "internal/reservation/frontend"
+
+}

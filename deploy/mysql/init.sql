@@ -1,7 +1,12 @@
--- 预约系统数据库初始化脚本
--- 架构: 双数据库设计
+-- 预约场地审核系统 — 单体架构数据库初始化脚本
+-- 数据库: reservation_sys（合并原 home_xy + home_res）
+--
+-- 原架构: 双数据库
 --   home_xy: 账号数据库（users, admins）- Gateway 管理
 --   home_res: 预约+审核数据库（reservation_orders, reservation_slots, review_records）- Reservation + Admin 共享
+--
+-- 新架构: 单数据库
+--   reservation_sys: 所有表在同一库下，通过单连接访问
 
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
@@ -10,14 +15,20 @@ SET CHARACTER SET utf8mb4;
 CREATE USER IF NOT EXISTS 'res_user'@'%' IDENTIFIED BY 'xSIn34sU7qQl31kQ3TVfcQ==';
 
 -- =============================================
--- 数据库1: 账号数据库（Gateway 管理）
+-- 数据库: reservation_sys
 -- =============================================
 
-CREATE DATABASE IF NOT EXISTS `home_xy` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `reservation_sys`
+  DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 授权: res_user 对 home_xy 数据库的全部权限
-GRANT ALL PRIVILEGES ON `home_xy`.* TO 'res_user'@'%';
-USE `home_xy`;
+GRANT ALL PRIVILEGES ON `reservation_sys`.* TO 'res_user'@'%';
+FLUSH PRIVILEGES;
+
+USE `reservation_sys`;
+
+-- =============================================
+-- 账号相关表（原 home_xy）
+-- =============================================
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS `users` (
@@ -48,17 +59,15 @@ CREATE TABLE IF NOT EXISTS `admins` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员表';
 
 -- 插入默认管理员账号
+-- 默认密码 123456
 INSERT INTO `admins` (`username`, `password`, `real_name`, `role`) VALUES
-('admin1', '$2a$10$ophtXKaQ85PoqlWd84MF7eKR/kg4EZFH7xfDG2PBKjlKp6teh14Xi', '一级管理员', 1),
-('admin2', '$2a$10$ophtXKaQ85PoqlWd84MF7eKR/kg4EZFH7xfDG2PBKjlKp6teh14Xi', '二级管理员', 2)
+('admin1', '$2a$10$zn0I1E9zi.fUcRFfp5q7F.feb/TSTCyksXCuel9rjNwZWwFgEVpl2', '一级管理员', 1),
+('admin2', '$2a$10$zn0I1E9zi.fUcRFfp5q7F.feb/TSTCyksXCuel9rjNwZWwFgEVpl2', '二级管理员', 2)
 ON DUPLICATE KEY UPDATE `username`=VALUES(`username`);
 
 -- =============================================
--- 数据库2: 预约+审核数据库（Reservation + Admin 共享）
+-- 预约+审核相关表（原 home_res）
 -- =============================================
-
-CREATE DATABASE IF NOT EXISTS `home_res` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `home_res`;
 
 -- 预约订单表
 CREATE TABLE IF NOT EXISTS `reservation_orders` (
@@ -114,8 +123,6 @@ CREATE TABLE IF NOT EXISTS `review_records` (
     KEY `idx_review_records_reviewer_id` (`reviewer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核记录表';
 
--- 授权: res_user 对 home_res 数据库的全部权限
-GRANT ALL PRIVILEGES ON `home_res`.* TO 'res_user'@'%';
 FLUSH PRIVILEGES;
 
 -- 完成

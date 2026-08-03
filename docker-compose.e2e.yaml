@@ -48,9 +48,9 @@ services:
 
   # ============ 应用服务 ============
 
-  gateway:
-    image: ${GATEWAY_IMAGE:-reservation-gateway:latest}
-    container_name: reservation-e2e-gateway
+  server:
+    image: ${SERVER_IMAGE:-reservation-server:latest}
+    container_name: reservation-e2e-server
     restart: unless-stopped
     depends_on:
       mysql:
@@ -59,41 +59,9 @@ services:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/gateway/configs/config_v1.local.yaml
+      - CONFIG_PATH=configs/config.yaml
     volumes:
-      - ./service/gateway/configs:/app/service/gateway/configs:ro
-    networks:
-      - e2e-net
-
-  reservation:
-    image: ${RESERVATION_IMAGE:-reservation-reservation:latest}
-    container_name: reservation-e2e-reservation
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/reservation/configs/config_v2.local.yaml
-    volumes:
-      - ./service/reservation/configs:/app/service/reservation/configs:ro
-    networks:
-      - e2e-net
-
-  admin:
-    image: ${ADMIN_IMAGE:-reservation-admin:latest}
-    container_name: reservation-e2e-admin
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      gateway:
-        condition: service_started
-    environment:
-      - TZ=Asia/Shanghai
-      - CONFIG_PATH=service/admin/configs/config_v3.local.yaml
-    volumes:
-      - ./service/admin/configs:/app/service/admin/configs:ro
+      - ./configs:/app/configs:ro
     networks:
       - e2e-net
 
@@ -103,13 +71,11 @@ services:
     container_name: reservation-e2e-nginx
     restart: unless-stopped
     depends_on:
-      - gateway
-      - reservation
-      - admin
+      - server
     ports:
       - "80:80"
     volumes:
-      - ./deploy/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/nginx.local.config:/etc/nginx/nginx.conf:ro
     networks:
       - e2e-net
 
