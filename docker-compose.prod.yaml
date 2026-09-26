@@ -93,6 +93,32 @@ services:
     networks:
       - reservation-net
 
+
+  # 内容管理服务（Python Flask：内容模块/通知/微信菜单/邮件/分享配置）
+  content-service:
+    build:
+      context: ./content-service
+      dockerfile: Dockerfile
+    container_name: reservation-content
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=res_user
+      - DB_PASSWORD=xSIn34sU7qQl31kQ3TVfcQ==
+      - DB_NAME=home_xy
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123456
+      - PUBLIC_BASE_URL=https://www.szuedf.org.cn
+    volumes:
+      - content_uploads:/app/uploads
+    networks:
+      - reservation-net
+
   # Nginx 反向代理
   nginx:
     image: nginx:alpine
@@ -102,6 +128,7 @@ services:
       - gateway
       - reservation
       - admin
+      - content-service
     ports:
       - "80:80"
       - "443:443"
@@ -120,3 +147,4 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  content_uploads:
